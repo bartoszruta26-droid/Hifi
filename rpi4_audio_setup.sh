@@ -24,8 +24,18 @@ LOG_FILE="$HOME/.rpi_audio_script.log"
 
 # Domyślne wartości wysokiej jakości
 SAMPLE_RATE="384000"
-RESAMPLE_METHOD="soxr"
+BIT_DEPTH="32"
+RESAMPLE_METHOD="soxr highest"
 MPD_CONVERTER="soxr highest"
+MIXER_TYPE="hardware"
+VOLUME_CURVE="logarithmic"
+DITHER_ENABLED="yes"
+BUFFER_SIZE="20480"
+CLOCK_SOURCE="internal"
+OUTPUT_FORMAT="float32le"
+ZERO_CROSSING="yes"
+SOFT_CLIP="no"
+HAT_MODEL="justboom-dac"
 
 # Kolory dla CLI
 RED='\033[0;31m'
@@ -228,6 +238,132 @@ configure_quality() {
   echo "Ustawiono Bit Depth: ${BIT_DEPTH} bit"
   echo ""
 
+  # Wybór formatu wyjściowego PulseAudio
+  echo "Wybierz format wyjściowy (Output Format):"
+  echo "1) s16le (16-bit Integer)"
+  echo "2) s24le (24-bit Integer)"
+  echo "3) s32le (32-bit Integer)"
+  echo "4) float32le (32-bit Float - Zalecane)"
+  echo "5) float64le (64-bit Float - Najwyższa precyzja)"
+  echo ""
+  read -p "Twój wybór [1-5] (domyślnie 4): " fmt_choice
+  case $fmt_choice in
+    1) OUTPUT_FORMAT="s16le" ;;
+    2) OUTPUT_FORMAT="s24le" ;;
+    3) OUTPUT_FORMAT="s32le" ;;
+    4) OUTPUT_FORMAT="float32le" ;;
+    5) OUTPUT_FORMAT="float64le" ;;
+    *) OUTPUT_FORMAT="float32le" ;;
+  esac
+  echo "Ustawiono Output Format: ${OUTPUT_FORMAT}"
+  echo ""
+
+  # Wybór typu miksera
+  echo "Wybierz typ miksera (Mixer Type):"
+  echo "1) hardware (Bezpośrednia kontrola sprzętu)"
+  echo "2) software (Mikser programowy PulseAudio)"
+  echo "3) none (Bez miksera - bezpośredni dostęp)"
+  echo ""
+  read -p "Twój wybór [1-3] (domyślnie 1): " mixer_choice
+  case $mixer_choice in
+    1) MIXER_TYPE="hardware" ;;
+    2) MIXER_TYPE="software" ;;
+    3) MIXER_TYPE="none" ;;
+    *) MIXER_TYPE="hardware" ;;
+  esac
+  echo "Ustawiono Mixer Type: ${MIXER_TYPE}"
+  echo ""
+
+  # Wybór krzywej głośności
+  echo "Wybierz krzywą głośności (Volume Curve):"
+  echo "1) logarithmic (Logarytmiczna - naturalna dla ludzkiego ucha)"
+  echo "2) linear (Liniowa - równomierna zmiana)"
+  echo ""
+  read -p "Twój wybór [1-2] (domyślnie 1): " curve_choice
+  case $curve_choice in
+    1) VOLUME_CURVE="logarithmic" ;;
+    2) VOLUME_CURVE="linear" ;;
+    *) VOLUME_CURVE="logarithmic" ;;
+  esac
+  echo "Ustawiono Volume Curve: ${VOLUME_CURVE}"
+  echo ""
+
+  # Dithering
+  echo "Dithering (szum ditherujący przy konwersji bit-depth):"
+  echo "1) Włączony (Zalecane przy konwersji 24/32 -> niższe)"
+  echo "2) Wyłączony (Czysty sygnał, możliwe artefakty)"
+  echo ""
+  read -p "Twój wybór [1-2] (domyślnie 1): " dither_choice
+  case $dither_choice in
+    1) DITHER_ENABLED="yes" ;;
+    2) DITHER_ENABLED="no" ;;
+    *) DITHER_ENABLED="yes" ;;
+  esac
+  echo "Ustawiono Dither: ${DITHER_ENABLED}"
+  echo ""
+
+  # Rozmiar bufora
+  echo "Rozmiar bufora audio (Audio Buffer Size w kB):"
+  echo "1) 10240 (10MB - Niskie opóźnienie)"
+  echo "2) 20480 (20MB - Zbalansowane)"
+  echo "3) 40960 (40MB - Wysoka stabilność)"
+  echo "4) 81920 (80MB - Maksymalna stabilność, wyższe opóźnienie)"
+  echo ""
+  read -p "Twój wybór [1-4] (domyślnie 2): " buffer_choice
+  case $buffer_choice in
+    1) BUFFER_SIZE="10240" ;;
+    2) BUFFER_SIZE="20480" ;;
+    3) BUFFER_SIZE="40960" ;;
+    4) BUFFER_SIZE="81920" ;;
+    *) BUFFER_SIZE="20480" ;;
+  esac
+  echo "Ustawiono Buffer Size: ${BUFFER_SIZE} kB"
+  echo ""
+
+  # Źródło zegara
+  echo "Źródło zegara (Clock Source):"
+  echo "1) internal (Wewnętrzny zegar DAC)"
+  echo "2) external (Zewnętrzny zegar - jeśli dostępny)"
+  echo "3) auto (Automatyczny wybór)"
+  echo ""
+  read -p "Twój wybór [1-3] (domyślnie 1): " clock_choice
+  case $clock_choice in
+    1) CLOCK_SOURCE="internal" ;;
+    2) CLOCK_SOURCE="external" ;;
+    3) CLOCK_SOURCE="auto" ;;
+    *) CLOCK_SOURCE="internal" ;;
+  esac
+  echo "Ustawiono Clock Source: ${CLOCK_SOURCE}"
+  echo ""
+
+  # Zero Crossing
+  echo "Zero Crossing (zmiana głośności tylko przy zerowaniu fali):"
+  echo "1) Włączony (Unika kliknięć przy zmianie głośności)"
+  echo "2) Wyłączony (Natychmiastowa zmiana głośności)"
+  echo ""
+  read -p "Twój wybór [1-2] (domyślnie 1): " zc_choice
+  case $zc_choice in
+    1) ZERO_CROSSING="yes" ;;
+    2) ZERO_CROSSING="no" ;;
+    *) ZERO_CROSSING="yes" ;;
+  esac
+  echo "Ustawiono Zero Crossing: ${ZERO_CROSSING}"
+  echo ""
+
+  # Soft Clip
+  echo "Soft Clip (miękkie przycinanie sygnału):"
+  echo "1) Włączony (Łagodne przycinanie, mniej słyszalne artefakty)"
+  echo "2) Wyłączony (Hard clip - ostre przycinanie)"
+  echo ""
+  read -p "Twój wybór [1-2] (domyślnie 2): " sc_choice
+  case $sc_choice in
+    1) SOFT_CLIP="yes" ;;
+    2) SOFT_CLIP="no" ;;
+    *) SOFT_CLIP="no" ;;
+  esac
+  echo "Ustawiono Soft Clip: ${SOFT_CLIP}"
+  echo ""
+
   # Wybór metody resamplingu PulseAudio
   echo "Wybierz metodę resamplingu dla PulseAudio:"
   echo "1) speex-float-1 (Szybka, niska jakość)"
@@ -309,8 +445,12 @@ gen_configs() {
   # 1. PulseAudio daemon.conf
   cat > "$STAGING_DIR/daemon.conf" << EOF
 # Optymalizacja: Max Quality (User Selected)
-# Sample Rate: ${SAMPLE_RATE} Hz | Resample: ${RESAMPLE_METHOD}
-default-sample-format = float32le
+# Sample Rate: ${SAMPLE_RATE} Hz | Bit Depth: ${BIT_DEPTH} bit
+# Output Format: ${OUTPUT_FORMAT} | Resample: ${RESAMPLE_METHOD}
+# Mixer: ${MIXER_TYPE} | Volume Curve: ${VOLUME_CURVE}
+# Dither: ${DITHER_ENABLED} | Buffer: ${BUFFER_SIZE} kB
+# Clock: ${CLOCK_SOURCE} | Zero Crossing: ${ZERO_CROSSING} | Soft Clip: ${SOFT_CLIP}
+default-sample-format = ${OUTPUT_FORMAT}
 default-sample-rate = ${SAMPLE_RATE}
 alternate-sample-rate = 96000
 avoid-resampling = yes
@@ -341,7 +481,8 @@ EOF
   # 3. MPD mpd.conf
   cat > "$STAGING_DIR/mpd.conf" << EOF
 # MPD - Wysoka jakość + PulseAudio
-# Konwerter: ${MPD_CONVERTER}
+# Konwerter: ${MPD_CONVERTER} | Mixer: ${MIXER_TYPE}
+# Buffer: ${BUFFER_SIZE} kB | Zero Crossing: ${ZERO_CROSSING}
 music_directory "/var/lib/mpd/music"
 playlist_directory "/var/lib/mpd/playlists"
 db_file "/var/lib/mpd/tag_cache"
@@ -355,14 +496,14 @@ group "audio"
 audio_output {
     type            "pulse"
     name            "RPi4 Hi-Res Pulse"
-    mixer_type      "software"
+    mixer_type      "${MIXER_TYPE}"
 }
 
 # Konwersja próbkowania (SOX High Quality)
 samplerate_converter "${MPD_CONVERTER}"
 
 # Buforowanie i odtwarzanie
-audio_buffer_size "20480"
+audio_buffer_size "${BUFFER_SIZE}"
 buffer_before_play "10%"
 gapless_mp3_playback "yes"
 replaygain "album"
