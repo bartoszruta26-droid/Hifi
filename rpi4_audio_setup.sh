@@ -113,34 +113,119 @@ compare_files() {
 }
 
 # ==========================================
+# BAZA DANYCH MOŻLIWOŚCI DAC HAT
+# ==========================================
+
+# Definicja możliwości każdego modelu DAC
+# Format: MAX_SAMPLE_RATE:MAX_BIT_DEPTH:SUPPORTED_RATES
+# SUPPORTED_RATES to lista dostępnych częstotliwości oddzielona przecinkami
+
+declare -A DAC_CAPABILITIES=(
+  ["justboom-dac"]="384000:32:44100,48000,88200,96000,176400,192000,352800,384000"
+  ["hifiberry-dacplus"]="384000:32:44100,48000,88200,96000,176400,192000,352800,384000"
+  ["hifiberry-dacplushd"]="768000:32:44100,48000,88200,96000,176400,192000,352800,384000,705600,768000"
+  ["iqaudio-dacplus"]="384000:32:44100,48000,88200,96000,176400,192000,352800,384000"
+  ["i2s-dac"]="384000:32:44100,48000,88200,96000,176400,192000,352800,384000"
+  ["allo-boss-dac-pcm512x-audio"]="384000:32:44100,48000,88200,96000,176400,192000,352800,384000"
+  ["allo-katana-dac-audio"]="768000:32:44100,48000,88200,96000,176400,192000,352800,384000,705600,768000"
+  ["googlevoicehat-soundcard"]="48000:16:8000,16000,22050,24000,32000,44100,48000"
+  ["audioinjector-wm8731-audio"]="96000:24:8000,16000,22050,24000,32000,44100,48000,88200,96000"
+)
+
+# Domyślne wartości dla nieznanego DAC
+DEFAULT_MAX_RATE="384000"
+DEFAULT_MAX_BIT="32"
+DEFAULT_RATES="44100,48000,88200,96000,176400,192000,352800,384000"
+
+get_dac_capabilities() {
+  local hat_model="$1"
+  
+  if [[ -v DAC_CAPABILITIES["$hat_model"] ]]; then
+    echo "${DAC_CAPABILITIES[$hat_model]}"
+  else
+    echo "$DEFAULT_MAX_RATE:$DEFAULT_MAX_BIT:$DEFAULT_RATES"
+  fi
+}
+
+# ==========================================
 # KONFIGURACJA PARAMETRÓW JAKOŚCI
 # ==========================================
 
 configure_quality() {
+  local hat_model="${1:-justboom-dac}"
+  
+  # Pobierz możliwości DAC
+  local dac_caps
+  dac_caps=$(get_dac_capabilities "$hat_model")
+  
+  local max_rate max_bit supported_rates
+  IFS=':' read -r max_rate max_bit supported_rates <<< "$dac_caps"
+  
   print_header
   echo -e "${CYAN}⚙️  Konfiguracja Jakości Dźwięku${NC}"
+  echo -e "Model DAC: ${GREEN}$hat_model${NC}"
+  echo -e "Maksymalna częstotliwość: ${GREEN}${max_rate} Hz${NC}"
+  echo -e "Maksymalna głębia bitowa: ${GREEN}${max_bit} bit${NC}"
   echo ""
   
-  # Wybór częstotliwości próbkowania
+  # Parsowanie dostępnych rate do tablicy
+  IFS=',' read -ra RATES_ARRAY <<< "$supported_rates"
+  
+  # Budowanie menu z dostępnymi opcjami
   echo "Wybierz domyślną częstotliwość próbkowania (Sample Rate):"
-  echo "1) 44.1 kHz (Standard CD)"
-  echo "2) 48 kHz (Standard wideo/pro)"
-  echo "3) 96 kHz (Hi-Res)"
-  echo "4) 192 kHz (High End)"
-  echo "5) 384 kHz (Ultra Hi-Res - Zalecane)"
-  echo "6) 768 kHz (Maksymalna - Eksperymentalne)"
+  local idx=1
+  declare -A rate_map
+  for rate in "${RATES_ARRAY[@]}"; do
+    local khz=$((rate / 1000))
+    local label
+    case $rate in
+      44100) label="Standard CD" ;;
+      48000) label="Standard wideo/pro" ;;
+      88200|96000) label="Hi-Res" ;;
+      176400|192000) label="High End" ;;
+      352800|384000) label="Ultra Hi-Res" ;;
+      705600|768000) label="Maksymalna (Eksperymentalne)" ;;
+      *) label="Niestandardowa" ;;
+    esac
+    echo "$idx) $rate Hz ($khz kHz) - $label"
+    rate_map[$idx]=$rate
+    ((idx++))
+  done
   echo ""
-  read -p "Twój wybór [1-6] (domyślnie 5): " sr_choice
-  case $sr_choice in
-    1) SAMPLE_RATE="44100" ;;
-    2) SAMPLE_RATE="48000" ;;
-    3) SAMPLE_RATE="96000" ;;
-    4) SAMPLE_RATE="192000" ;;
-    5) SAMPLE_RATE="384000" ;;
-    6) SAMPLE_RATE="768000" ;;
-    *) SAMPLE_RATE="384000" ;;
-  esac
+  
+  local default_choice=${#RATES_ARRAY[@]}
+  read -p "Twój wybór [1-$default_choice] (domyślnie $default_choice): " sr_choice
+  
+  if [[ -v rate_map[$sr_choice] ]]; then
+    SAMPLE_RATE="${rate_map[$sr_choice]}"
+  else
+    SAMPLE_RATE="${RATES_ARRAY[-1]}"
+  fi
+  
   echo "Ustawiono Sample Rate: ${SAMPLE_RATE} Hz"
+  echo ""
+
+  # Wybór głębi bitowej (Bit Depth)
+  echo "Wybierz głębię bitową (Bit Depth):"
+  echo "1) 16 bit (Standard CD)"
+  echo "2) 24 bit (Hi-Res Audio)"
+  if [[ $max_bit -ge 32 ]]; then
+    echo "3) 32 bit (Maksymalna jakość - Zalecane)"
+    local bit_max=3
+  else
+    local bit_max=2
+  fi
+  echo ""
+  read -p "Twój wybór [1-$bit_max] (domyślnie $bit_max): " bit_choice
+  
+  case $bit_choice in
+    1) BIT_DEPTH="16" ;;
+    2) BIT_DEPTH="24" ;;
+    3) BIT_DEPTH="32" ;;
+    *) BIT_DEPTH="$max_bit" ;;
+  esac
+  
+  echo "Ustawiono Bit Depth: ${BIT_DEPTH} bit"
   echo ""
 
   # Wybór metody resamplingu PulseAudio
