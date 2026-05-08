@@ -22,20 +22,27 @@ STAGING_DIR="/tmp/rpi_audio_staging"
 BACKUP_BASE="$HOME/.rpi_audio_backup"
 LOG_FILE="$HOME/.rpi_audio_script.log"
 
-# Domyślne wartości wysokiej jakości
-SAMPLE_RATE="384000"
+# Domyślne wartości najwyższej jakości audio
+SAMPLE_RATE="768000"
 BIT_DEPTH="32"
 RESAMPLE_METHOD="soxr highest"
 MPD_CONVERTER="soxr highest"
 MIXER_TYPE="hardware"
 VOLUME_CURVE="logarithmic"
 DITHER_ENABLED="yes"
-BUFFER_SIZE="20480"
+BUFFER_SIZE="40960"
 CLOCK_SOURCE="internal"
-OUTPUT_FORMAT="float32le"
+OUTPUT_FORMAT="float64le"
 ZERO_CROSSING="yes"
-SOFT_CLIP="no"
+SOFT_CLIP="yes"
 HAT_MODEL="justboom-dac"
+# Dodatkowe parametry wysokiej jakości
+CLOCK_MODE="master"
+OUTPUT_DELAY="0"
+AUTO_MUTE="no"
+VOLUME_GAIN="0"
+DEEMPHASIS="auto"
+CHANNEL_MODE="stereo"
 
 # Kolory dla CLI
 RED='\033[0;31m'
@@ -238,20 +245,39 @@ configure_quality() {
   echo "Ustawiono Bit Depth: ${BIT_DEPTH} bit"
   echo ""
 
-  # Wybór formatu wyjściowego PulseAudio
+  # Wybór formatu wyjściowego PulseAudio - dopasowany do możliwości DAC
   echo "Wybierz format wyjściowy (Output Format):"
   echo "1) s16le (16-bit Integer)"
   echo "2) s24le (24-bit Integer)"
-  echo "3) s32le (32-bit Integer)"
-  echo "4) float32le (32-bit Float - Zalecane)"
-  echo "5) float64le (64-bit Float - Najwyższa precyzja)"
+  if [[ $max_bit -ge 32 ]]; then
+    echo "3) s32le (32-bit Integer)"
+    echo "4) float32le (32-bit Float - Zalecane)"
+    echo "5) float64le (64-bit Float - Najwyższa precyzja)"
+    local fmt_max=5
+  else
+    echo "3) float32le (32-bit Float - Zalecane)"
+    echo "4) float64le (64-bit Float - Najwyższa precyzja)"
+    local fmt_max=4
+  fi
   echo ""
-  read -p "Twój wybór [1-5] (domyślnie 4): " fmt_choice
+  read -p "Twój wybór [1-$fmt_max] (domyślnie 4): " fmt_choice
   case $fmt_choice in
     1) OUTPUT_FORMAT="s16le" ;;
     2) OUTPUT_FORMAT="s24le" ;;
-    3) OUTPUT_FORMAT="s32le" ;;
-    4) OUTPUT_FORMAT="float32le" ;;
+    3) 
+      if [[ $max_bit -ge 32 ]]; then
+        OUTPUT_FORMAT="s32le"
+      else
+        OUTPUT_FORMAT="float32le"
+      fi
+      ;;
+    4) 
+      if [[ $max_bit -ge 32 ]] || [[ $fmt_choice -eq 4 && $fmt_max -eq 5 ]]; then
+        OUTPUT_FORMAT="float32le"
+      else
+        OUTPUT_FORMAT="float64le"
+      fi
+      ;;
     5) OUTPUT_FORMAT="float64le" ;;
     *) OUTPUT_FORMAT="float32le" ;;
   esac
@@ -384,6 +410,108 @@ configure_quality() {
     *) RESAMPLE_METHOD="soxr highest" ;;
   esac
   echo "Ustawiono Resample Method: ${RESAMPLE_METHOD}"
+  echo ""
+
+  # Tryb pracy DAC (Master/Slave)
+  echo "Tryb pracy DAC (Clock Mode):"
+  echo "1) Slave (DAC otrzymuje zegar od CPU - domyślne)"
+  echo "2) Master (DAC generuje zegar dla CPU - lepsza synchronizacja)"
+  echo "3) Auto (Automatyczny wybór na podstawie sprzętu)"
+  echo ""
+  read -p "Twój wybór [1-3] (domyślnie 1): " clock_mode_choice
+  case $clock_mode_choice in
+    1) CLOCK_MODE="slave" ;;
+    2) CLOCK_MODE="master" ;;
+    3) CLOCK_MODE="auto" ;;
+    *) CLOCK_MODE="slave" ;;
+  esac
+  echo "Ustawiono Clock Mode: ${CLOCK_MODE}"
+  echo ""
+
+  # Output Delay (opóźnienie wyjścia w ms)
+  echo "Opóźnienie wyjścia audio (Output Delay w ms):"
+  echo "1) 0 ms (Brak opóźnienia - domyślne)"
+  echo "2) 10 ms (Lekkie opóźnienie)"
+  echo "3) 20 ms (Standardowe)"
+  echo "4) 50 ms (Duże opóźnienie)"
+  echo "5) 100 ms (Maksymalne)"
+  echo ""
+  read -p "Twój wybór [1-5] (domyślnie 1): " delay_choice
+  case $delay_choice in
+    1) OUTPUT_DELAY="0" ;;
+    2) OUTPUT_DELAY="10" ;;
+    3) OUTPUT_DELAY="20" ;;
+    4) OUTPUT_DELAY="50" ;;
+    5) OUTPUT_DELAY="100" ;;
+    *) OUTPUT_DELAY="0" ;;
+  esac
+  echo "Ustawiono Output Delay: ${OUTPUT_DELAY} ms"
+  echo ""
+
+  # Auto Mute (automatyczne wyciszenie przy braku sygnału)
+  echo "Auto Mute (wyciszenie przy braku sygnału):"
+  echo "1) Włączony (Oszczędność energii, brak szumów tła)"
+  echo "2) Wyłączony (Ciągłe podtrzymanie sygnału)"
+  echo ""
+  read -p "Twój wybór [1-2] (domyślnie 1): " auto_mute_choice
+  case $auto_mute_choice in
+    1) AUTO_MUTE="yes" ;;
+    2) AUTO_MUTE="no" ;;
+    *) AUTO_MUTE="yes" ;;
+  esac
+  echo "Ustawiono Auto Mute: ${AUTO_MUTE}"
+  echo ""
+
+  # Volume Boost/Gain (wzmocnienie sygnału w dB)
+  echo "Wzmocnienie głośności (Volume Gain w dB):"
+  echo "1) 0 dB (Brak wzmocnienia - domyślne)"
+  echo "2) +3 dB (Lekkie wzmocnienie)"
+  echo "3) +6 dB (Średnie wzmocnienie)"
+  echo "4) +9 dB (Duże wzmocnienie)"
+  echo "5) +12 dB (Maksymalne wzmocnienie - uważaj na przesterowania)"
+  echo ""
+  read -p "Twój wybór [1-5] (domyślnie 1): " gain_choice
+  case $gain_choice in
+    1) VOLUME_GAIN="0" ;;
+    2) VOLUME_GAIN="3" ;;
+    3) VOLUME_GAIN="6" ;;
+    4) VOLUME_GAIN="9" ;;
+    5) VOLUME_GAIN="12" ;;
+    *) VOLUME_GAIN="0" ;;
+  esac
+  echo "Ustawiono Volume Gain: ${VOLUME_GAIN} dB"
+  echo ""
+
+  # De-emphasis (filtr korekcyjny)
+  echo "De-emphasis (filtr korekcyjny 50/15μs):"
+  echo "1) Wyłączony (Domyślne - większość nagrań)"
+  echo "2) Włączony (Dla starych nagrań CD z pre-emphasis)"
+  echo "3) Auto (Automatyczna detekcja flagi w metadanych)"
+  echo ""
+  read -p "Twój wybór [1-3] (domyślnie 1): " deemphasis_choice
+  case $deemphasis_choice in
+    1) DEEMPHASIS="off" ;;
+    2) DEEMPHASIS="on" ;;
+    3) DEEMPHASIS="auto" ;;
+    *) DEEMPHASIS="off" ;;
+  esac
+  echo "Ustawiono De-emphasis: ${DEEMPHASIS}"
+  echo ""
+
+  # Tryb kanałów (Mono/Stereo)
+  echo "Tryb kanałów (Channel Mode):"
+  echo "1) Stereo (Domyślne - lewy/prawy)"
+  echo "2) Mono (Sumowanie do jednego kanału)"
+  echo "3) Reverse Stereo (Zamiana kanałów L/R)"
+  echo ""
+  read -p "Twój wybór [1-3] (domyślnie 1): " channel_choice
+  case $channel_choice in
+    1) CHANNEL_MODE="stereo" ;;
+    2) CHANNEL_MODE="mono" ;;
+    3) CHANNEL_MODE="reverse" ;;
+    *) CHANNEL_MODE="stereo" ;;
+  esac
+  echo "Ustawiono Channel Mode: ${CHANNEL_MODE}"
   echo ""
 
   # Automatyczne dopasowanie MPD
