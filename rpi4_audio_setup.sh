@@ -251,8 +251,8 @@ load-module module-udev-detect tsched=0
 load-module module-combine-sink
 load-module module-intended-roles
 load-module module-always-sink
-# Exit
-set-default-sink auto_null
+# Exit - don't force auto_null, let PulseAudio auto-select the hardware sink
+# set-default-sink auto_null
 EOF
 
   # 3. MPD mpd.conf
