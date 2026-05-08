@@ -192,15 +192,14 @@ gen_configs() {
   echo "3) HiFiBerry DAC+ HD (PCM1792A)"
   echo "4) JustBoom DAC HAT"
   echo "5) IQaudio DAC Pro / DAC+"
-  echo "6) Pimoroni DACSHIM"
+  echo "6) Pimoroni DAC Shim (Generic I2S)"
   echo "7) Allo Boss DAC"
   echo "8) Allo Katana DAC"
-  echo "9) Sabre HiFi (generic)"
-  echo "10) Google Voice HAT"
-  echo "11) Audioinjector (IQaudio)"
-  echo "12) Inny / Własny (wpisz ręcznie)"
+  echo "9) Google Voice HAT"
+  echo "10) AudioInjector (WM8731)"
+  echo "11) Inny / Własny (wpisz ręcznie)"
   echo ""
-  read -p "Twój wybór [1-12] (domyślnie 1): " hat_choice
+  read -p "Twój wybór [1-11] (domyślnie 1): " hat_choice
   
   case $hat_choice in
     1) HAT_MODEL="justboom-dac" ;; # Często działa z R38
@@ -208,13 +207,12 @@ gen_configs() {
     3) HAT_MODEL="hifiberry-dacplushd" ;;
     4) HAT_MODEL="justboom-dac" ;;
     5) HAT_MODEL="iqaudio-dacplus" ;;
-    6) HAT_MODEL="pimoroni-dacshim" ;;
-    7) HAT_MODEL="allo-boss-dac-pcm512x" ;;
-    8) HAT_MODEL="allo-katana-dac" ;;
-    9) HAT_MODEL="googlevoicehat-sound-card" ;;
-    10) HAT_MODEL="googlevoicehat-sound-card" ;;
-    11) HAT_MODEL="audioinjector-wm8804" ;;
-    12) 
+    6) HAT_MODEL="i2s-dac" ;; # Pimoroni DAC Shim używa generic I2S
+    7) HAT_MODEL="allo-boss-dac-pcm512x-audio" ;;
+    8) HAT_MODEL="allo-katana-dac-audio" ;;
+    9) HAT_MODEL="googlevoicehat-soundcard" ;;
+    10) HAT_MODEL="audioinjector-wm8731-audio" ;;
+    11) 
       read -p "Wpisz nazwę dtoverlay (np. hifiberry-dac): " CUSTOM_HAT
       HAT_MODEL="${CUSTOM_HAT:-justboom-dac}"
       ;;
