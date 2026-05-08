@@ -211,7 +211,7 @@ gen_configs() {
     6) HAT_MODEL="pimoroni-dacshim" ;;
     7) HAT_MODEL="allo-boss-dac-pcm512x-composite" ;;
     8) HAT_MODEL="allo-katana-dac-audio" ;;
-    9) HAT_MODEL="googlevoicehat-soundcard" ;; # Często bazuje na PCM
+    9) HAT_MODEL="sabre-hifi" ;; # Sabre HiFi (generic) - correct overlay
     10) HAT_MODEL="googlevoicehat-soundcard" ;;
     11) HAT_MODEL="audioinjector-wm8804-audio" ;;
     12) 
@@ -251,8 +251,8 @@ load-module module-udev-detect tsched=0
 load-module module-combine-sink
 load-module module-intended-roles
 load-module module-always-sink
-# Exit
-set-default-sink auto_null
+# Exit - don't force auto_null, let PulseAudio auto-select the hardware sink
+# set-default-sink auto_null
 EOF
 
   # 3. MPD mpd.conf
