@@ -209,11 +209,11 @@ gen_configs() {
     4) HAT_MODEL="justboom-dac" ;;
     5) HAT_MODEL="iqaudio-dacplus" ;;
     6) HAT_MODEL="pimoroni-dacshim" ;;
-    7) HAT_MODEL="allo-boss-dac-pcm512x-composite" ;;
-    8) HAT_MODEL="allo-katana-dac-audio" ;;
-    9) HAT_MODEL="googlevoicehat-soundcard" ;; # Często bazuje na PCM
-    10) HAT_MODEL="googlevoicehat-soundcard" ;;
-    11) HAT_MODEL="audioinjector-wm8804-audio" ;;
+    7) HAT_MODEL="allo-boss-dac-pcm512x" ;;
+    8) HAT_MODEL="allo-katana-dac" ;;
+    9) HAT_MODEL="googlevoicehat-sound-card" ;;
+    10) HAT_MODEL="googlevoicehat-sound-card" ;;
+    11) HAT_MODEL="audioinjector-wm8804" ;;
     12) 
       read -p "Wpisz nazwę dtoverlay (np. hifiberry-dac): " CUSTOM_HAT
       HAT_MODEL="${CUSTOM_HAT:-justboom-dac}"
