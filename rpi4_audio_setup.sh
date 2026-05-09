@@ -526,12 +526,12 @@ configure_quality() {
 }
 
 # ==========================================
-# GENEROWANIE KONFIGURACJI
+# WYBÓR MODELU DAC HAT
 # ==========================================
 
-gen_configs() {
+select_model() {
   print_header
-  echo -e "${YELLOW}⏳ Generowanie plików konfiguracyjnych...${NC}"
+  echo -e "${YELLOW}⏳ Wybór modelu DAC HAT...${NC}"
   
   # Wybór modelu HAT
   echo ""
@@ -569,6 +569,26 @@ gen_configs() {
   esac
   
   echo "Wybrano overlay: ${HAT_MODEL}"
+  echo "$HAT_MODEL"
+}
+
+# ==========================================
+# GENEROWANIE KONFIGURACJI
+# ==========================================
+
+gen_configs() {
+  local hat_model="${1:-$HAT_MODEL}"
+  
+  print_header
+  echo -e "${YELLOW}⏳ Generowanie plików konfiguracyjnych...${NC}"
+  
+  # Użyj wybranego modelu lub wybierz go jeśli nie podano
+  if [ -z "$hat_model" ] || [ "$hat_model" = "justboom-dac" ]; then
+    hat_model=$(select_model | tail -n1)
+  fi
+  
+  HAT_MODEL="$hat_model"
+  echo "Używam modelu: ${HAT_MODEL}"
 
   # 1. PulseAudio daemon.conf
   cat > "$STAGING_DIR/daemon.conf" << EOF
@@ -759,14 +779,22 @@ test_audio() {
 # ==========================================
 
 main_menu() {
+  local hat_model_selected=""
+  
   while true; do
     print_header
     echo -e "${CYAN}MENU GŁÓWNE:${NC}"
+    if [ -n "$hat_model_selected" ]; then
+      echo -e "Wybrany model DAC: ${GREEN}$hat_model_selected${NC}"
+    else
+      echo -e "Wybrany model DAC: ${YELLOW}Brak (wybierz opcję 4)${NC}"
+    fi
+    echo ""
     echo "1) 📦 Zainstaluj pakiety (mpd, pulseaudio, sox)"
     echo "2) 💾 Backup obecnych plików"
     echo "3) 👁️ Podgląd plików systemowych"
-    echo "4) ⚙️ Generuj konfigurację (Wybór HAT + Jakość)"
-    echo "5) 🚀 Zastosuj konfigurację i Restart"
+    echo "4) ⚙️ Wybierz HAT + Konfiguruj jakość"
+    echo "5) 🚀 Generuj i Zastosuj konfigurację"
     echo "6) 🔍 Porównaj backup z nowymi plikami"
     echo "7) 🔊 Test Dźwięku"
     echo "8) 🛑 Wyjdź"
@@ -789,10 +817,18 @@ main_menu() {
         esac
         ;;
       4) 
-        configure_quality
-        gen_configs
+        hat_model_selected=$(select_model)
+        configure_quality "$hat_model_selected"
         ;;
-      5) apply_configs ;;
+      5)
+        if [ -z "$hat_model_selected" ]; then
+          echo -e "${RED}⚠️  Najpierw wybierz model DAC (opcja 4)!${NC}"
+          read -p "Enter..."
+        else
+          gen_configs "$hat_model_selected"
+          apply_configs
+        fi
+        ;;
       6)
         LATEST=$(ls -td "$BACKUP_BASE"/*/ 2>/dev/null | head -n1)
         if [ -z "$LATEST" ]; then
