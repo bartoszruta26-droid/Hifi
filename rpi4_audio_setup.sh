@@ -3,7 +3,7 @@ set -euo pipefail
 
 # ==========================================
 # Konfiguracja Audio RPi4 + HAT (Max Quality)
-# Autor: AI Assistant | Wersja: 2.0 (CLI + Menu)
+# Autor: AI Assistant | Wersja: 2.1 (CLI + Menu + PL/EN)
 # Przeznaczenie: Debian Trixie/Bookworm, PulseAudio + MPD
 # Obsługa: R38 HAT i inne popularne DAC HAT
 # ==========================================
@@ -44,6 +44,9 @@ VOLUME_GAIN="0"
 DEEMPHASIS="auto"
 CHANNEL_MODE="stereo"
 
+# Język menu (domyślnie polski)
+MENU_LANG="pl"
+
 # Kolory dla CLI
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -54,8 +57,13 @@ NC='\033[0m' # No Color
 
 # Sprawdzenie uprawnień
 if [ "$(id -u)" -ne 0 ]; then
-  echo -e "${RED}⚠️  BŁĄD: Skrypt wymaga uprawnień roota.${NC}"
-  echo -e "Uruchom komendą: ${CYAN}sudo bash $0${NC}"
+  if [ "$MENU_LANG" = "en" ]; then
+    echo -e "${RED}⚠️  ERROR: Script requires root privileges.${NC}"
+    echo -e "Run with: ${CYAN}sudo bash $0${NC}"
+  else
+    echo -e "${RED}⚠️  BŁĄD: Skrypt wymaga uprawnień roota.${NC}"
+    echo -e "Uruchom komendą: ${CYAN}sudo bash $0${NC}"
+  fi
   exit 1
 fi
 
@@ -74,10 +82,17 @@ mkdir -p "$STAGING_DIR" "$BACKUP_BASE"
 
 print_header() {
   clear
-  echo -e "${CYAN}=========================================="
-  echo -e "🎧 RPi4 Audio HQ Setup (Trixie/Bookworm)"
-  echo -e "Wersja: 2.0 | Obsługa R38 i innych HAT"
-  echo -e "==========================================${NC}"
+  if [ "$MENU_LANG" = "en" ]; then
+    echo -e "${CYAN}=========================================="
+    echo -e "🎧 RPi4 Audio HQ Setup (Trixie/Bookworm)"
+    echo -e "Version: 2.1 | R38 and other HAT support"
+    echo -e "==========================================${NC}"
+  else
+    echo -e "${CYAN}=========================================="
+    echo -e "🎧 RPi4 Audio HQ Setup (Trixie/Bookworm)"
+    echo -e "Wersja: 2.1 | Obsługa R38 i innych HAT"
+    echo -e "==========================================${NC}"
+  fi
   echo ""
 }
 
@@ -531,24 +546,41 @@ configure_quality() {
 
 select_model() {
   print_header
-  echo -e "${YELLOW}⏳ Wybór modelu DAC HAT...${NC}"
-  
-  # Wybór modelu HAT
-  echo ""
-  echo "Wybierz model swojego DAC HAT:"
-  echo "1) R38 / Generic I2S DAC (Justboom DAC / PCM512x)"
-  echo "2) HiFiBerry DAC+ / DAC+ Pro / DAC+ Zero"
-  echo "3) HiFiBerry DAC+ HD (PCM1792A)"
-  echo "4) JustBoom DAC HAT"
-  echo "5) IQaudio DAC Pro / DAC+"
-  echo "6) Pimoroni DAC Shim (Generic I2S)"
-  echo "7) Allo Boss DAC"
-  echo "8) Allo Katana DAC"
-  echo "9) Google Voice HAT"
-  echo "10) AudioInjector (WM8731)"
-  echo "11) Inny / Własny (wpisz ręcznie)"
-  echo ""
-  read -p "Twój wybór [1-11] (domyślnie 1): " hat_choice
+  if [ "$MENU_LANG" = "en" ]; then
+    echo -e "${YELLOW}⏳ Select DAC HAT model...${NC}"
+    echo ""
+    echo "Select your DAC HAT model:"
+    echo "1) R38 / Generic I2S DAC (Justboom DAC / PCM512x)"
+    echo "2) HiFiBerry DAC+ / DAC+ Pro / DAC+ Zero"
+    echo "3) HiFiBerry DAC+ HD (PCM1792A)"
+    echo "4) JustBoom DAC HAT"
+    echo "5) IQaudio DAC Pro / DAC+"
+    echo "6) Pimoroni DAC Shim (Generic I2S)"
+    echo "7) Allo Boss DAC"
+    echo "8) Allo Katana DAC"
+    echo "9) Google Voice HAT"
+    echo "10) AudioInjector (WM8731)"
+    echo "11) Other / Custom (enter manually)"
+    echo ""
+    read -p "Your choice [1-11] (default 1): " hat_choice
+  else
+    echo -e "${YELLOW}⏳ Wybór modelu DAC HAT...${NC}"
+    echo ""
+    echo "Wybierz model swojego DAC HAT:"
+    echo "1) R38 / Generic I2S DAC (Justboom DAC / PCM512x)"
+    echo "2) HiFiBerry DAC+ / DAC+ Pro / DAC+ Zero"
+    echo "3) HiFiBerry DAC+ HD (PCM1792A)"
+    echo "4) JustBoom DAC HAT"
+    echo "5) IQaudio DAC Pro / DAC+"
+    echo "6) Pimoroni DAC Shim (Generic I2S)"
+    echo "7) Allo Boss DAC"
+    echo "8) Allo Katana DAC"
+    echo "9) Google Voice HAT"
+    echo "10) AudioInjector (WM8731)"
+    echo "11) Inny / Własny (wpisz ręcznie)"
+    echo ""
+    read -p "Twój wybór [1-11] (domyślnie 1): " hat_choice
+  fi
   
   case $hat_choice in
     1) HAT_MODEL="justboom-dac" ;; # Często działa z R38
@@ -562,13 +594,21 @@ select_model() {
     9) HAT_MODEL="googlevoicehat-soundcard" ;;
     10) HAT_MODEL="audioinjector-wm8731-audio" ;;
     11) 
-      read -p "Wpisz nazwę dtoverlay (np. hifiberry-dac): " CUSTOM_HAT
+      if [ "$MENU_LANG" = "en" ]; then
+        read -p "Enter dtoverlay name (e.g., hifiberry-dac): " CUSTOM_HAT
+      else
+        read -p "Wpisz nazwę dtoverlay (np. hifiberry-dac): " CUSTOM_HAT
+      fi
       HAT_MODEL="${CUSTOM_HAT:-justboom-dac}"
       ;;
     *) HAT_MODEL="justboom-dac" ;;
   esac
   
-  echo "Wybrano overlay: ${HAT_MODEL}"
+  if [ "$MENU_LANG" = "en" ]; then
+    echo "Selected overlay: ${HAT_MODEL}"
+  else
+    echo "Wybrano overlay: ${HAT_MODEL}"
+  fi
   echo "$HAT_MODEL"
 }
 
@@ -662,11 +702,15 @@ auto_update_depth "3"
 zeroconf_enabled "no"
 EOF
 
-  # 4. Boot config
+  # 4. Boot config - zachowaj komentarze i nieużywane wpisy
   if [ -f "$BOOT_CFG" ]; then
     cp "$BOOT_CFG" "$STAGING_DIR/config.txt"
-    # Usuń stare dtoverlay audio
-    sed -i '/^dtoverlay=.*dac\|^dtoverlay=.*audio\|^dtparam=audio/d' "$STAGING_DIR/config.txt"
+    # Komentarzowanie starych dtoverlay audio (zachowując oryginalne linie)
+    # Nie usuwamy żadnych linii - tylko dezaktywujemy aktywne wpisy audio
+    sed -i 's/^\(dtoverlay=.*dac\)/#DEPRECATED: \1/' "$STAGING_DIR/config.txt"
+    sed -i 's/^\(dtoverlay=.*audio\)/#DEPRECATED: \1/' "$STAGING_DIR/config.txt"
+    sed -i 's/^\(dtparam=audio=on\)/#DEPRECATED: \1/' "$STAGING_DIR/config.txt"
+    # Uwaga: wszystkie inne linie (w tym komentarze #, //, ;) pozostają nienaruszone
   else
     touch "$STAGING_DIR/config.txt"
   fi
@@ -783,33 +827,73 @@ main_menu() {
   
   while true; do
     print_header
-    echo -e "${CYAN}MENU GŁÓWNE:${NC}"
-    if [ -n "$hat_model_selected" ]; then
-      echo -e "Wybrany model DAC: ${GREEN}$hat_model_selected${NC}"
+    if [ "$MENU_LANG" = "en" ]; then
+      echo -e "${CYAN}MAIN MENU:${NC}"
+      if [ -n "$hat_model_selected" ]; then
+        echo -e "Selected DAC model: ${GREEN}$hat_model_selected${NC}"
+      else
+        echo -e "Selected DAC model: ${YELLOW}None (select option 4)${NC}"
+      fi
+      echo ""
+      echo "0) 🌐 Change language (PL/EN)"
+      echo "1) 📦 Install packages (mpd, pulseaudio, sox)"
+      echo "2) 💾 Backup current files"
+      echo "3) 👁️ Preview system files"
+      echo "4) ⚙️ Select HAT + Configure quality"
+      echo "5) 🚀 Generate and Apply configuration"
+      echo "6) 🔍 Compare backup with new files"
+      echo "7) 🔊 Audio Test"
+      echo "8) 🛑 Exit"
+      echo ""
+      read -p "Select option [0-8]: " choice
     else
-      echo -e "Wybrany model DAC: ${YELLOW}Brak (wybierz opcję 4)${NC}"
+      echo -e "${CYAN}MENU GŁÓWNE:${NC}"
+      if [ -n "$hat_model_selected" ]; then
+        echo -e "Wybrany model DAC: ${GREEN}$hat_model_selected${NC}"
+      else
+        echo -e "Wybrany model DAC: ${YELLOW}Brak (wybierz opcję 4)${NC}"
+      fi
+      echo ""
+      echo "0) 🌐 Zmień język (PL/EN)"
+      echo "1) 📦 Zainstaluj pakiety (mpd, pulseaudio, sox)"
+      echo "2) 💾 Backup obecnych plików"
+      echo "3) 👁️ Podgląd plików systemowych"
+      echo "4) ⚙️ Wybierz HAT + Konfiguruj jakość"
+      echo "5) 🚀 Generuj i Zastosuj konfigurację"
+      echo "6) 🔍 Porównaj backup z nowymi plikami"
+      echo "7) 🔊 Test Dźwięku"
+      echo "8) 🛑 Wyjdź"
+      echo ""
+      read -p "Wybierz opcję [0-8]: " choice
     fi
-    echo ""
-    echo "1) 📦 Zainstaluj pakiety (mpd, pulseaudio, sox)"
-    echo "2) 💾 Backup obecnych plików"
-    echo "3) 👁️ Podgląd plików systemowych"
-    echo "4) ⚙️ Wybierz HAT + Konfiguruj jakość"
-    echo "5) 🚀 Generuj i Zastosuj konfigurację"
-    echo "6) 🔍 Porównaj backup z nowymi plikami"
-    echo "7) 🔊 Test Dźwięku"
-    echo "8) 🛑 Wyjdź"
-    echo ""
-    read -p "Wybierz opcję [1-8]: " choice
 
     case $choice in
+      0)
+        if [ "$MENU_LANG" = "en" ]; then
+          MENU_LANG="pl"
+          echo "Language changed to Polish (Polski)"
+        else
+          MENU_LANG="en"
+          echo "Zmieniono język na angielski (English)"
+        fi
+        read -p "Press Enter to continue..."
+        ;;
       1) install_packages ;;
       2) backup_files ;;
       3)
-        echo "Podgląd:"
-        echo "1) Boot Config"
-        echo "2) Pulse Daemon"
-        echo "3) MPD Config"
-        read -p "Wybierz [1-3]: " sub
+        if [ "$MENU_LANG" = "en" ]; then
+          echo "Preview:"
+          echo "1) Boot Config"
+          echo "2) Pulse Daemon"
+          echo "3) MPD Config"
+          read -p "Select [1-3]: " sub
+        else
+          echo "Podgląd:"
+          echo "1) Boot Config"
+          echo "2) Pulse Daemon"
+          echo "3) MPD Config"
+          read -p "Wybierz [1-3]: " sub
+        fi
         case $sub in
           1) preview_file "$BOOT_CFG" "Boot Config" ;;
           2) preview_file "$PULSE_DAEMON" "Pulse Daemon" ;;
@@ -822,7 +906,11 @@ main_menu() {
         ;;
       5)
         if [ -z "$hat_model_selected" ]; then
-          echo -e "${RED}⚠️  Najpierw wybierz model DAC (opcja 4)!${NC}"
+          if [ "$MENU_LANG" = "en" ]; then
+            echo -e "${RED}⚠️  First select DAC model (option 4)!${NC}"
+          else
+            echo -e "${RED}⚠️  Najpierw wybierz model DAC (opcja 4)!${NC}"
+          fi
           read -p "Enter..."
         else
           gen_configs "$hat_model_selected"
@@ -832,7 +920,11 @@ main_menu() {
       6)
         LATEST=$(find "$BACKUP_BASE" -mindepth 1 -maxdepth 1 -type d -printf "%T@ %p\n" 2>/dev/null | sort -nr | head -n1 | cut -d" " -f2-)
         if [ -z "$LATEST" ]; then
-          echo "Brak backupu!"
+          if [ "$MENU_LANG" = "en" ]; then
+            echo "No backup found!"
+          else
+            echo "Brak backupu!"
+          fi
         else
           compare_files "$LATEST/$(basename "$PULSE_DAEMON")" "$STAGING_DIR/daemon.conf"
           compare_files "$LATEST/$(basename "$PULSE_DEFAULT")" "$STAGING_DIR/default.pa"
@@ -843,7 +935,13 @@ main_menu() {
         ;;
       7) test_audio ;;
       8) exit 0 ;;
-      *) echo "Nieprawidłowy wybór." ;;
+      *) 
+        if [ "$MENU_LANG" = "en" ]; then
+          echo "Invalid choice."
+        else
+          echo "Nieprawidłowy wybór."
+        fi
+        ;;
     esac
   done
 }
