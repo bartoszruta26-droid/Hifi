@@ -29,7 +29,7 @@ Skrypt automatyzujący konfigurację wysokiej jakości audio na Raspberry Pi 4 z
 
 ```bash
 cd ~
-wget https://raw.githubusercontent.com/twoj-repo/rpi4_audio_setup.sh
+wget https://raw.githubusercontent.com/bartoszruta26-droid/Hifi/main/rpi4_audio_setup.sh
 chmod +x rpi4_audio_setup.sh
 ```
 
