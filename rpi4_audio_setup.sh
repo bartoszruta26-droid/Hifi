@@ -118,19 +118,30 @@ compare_files() {
 
 configure_quality() {
   print_header
-  echo -e "${CYAN}⚙️  Konfiguracja Jakości Dźwięku${NC}"
+  echo -e "${CYAN}⚙️  Konfiguracja Jakości Dźwięku / Audio Quality Configuration${NC}"
+  echo ""
+  echo -e "${YELLOW}PL: Domyślna jakość: 384 kHz + soxr highest (Ultra Hi-Res)${NC}"
+  echo -e "${YELLOW}EN: Default quality: 384 kHz + soxr highest (Ultra Hi-Res)${NC}"
   echo ""
   
   # Wybór częstotliwości próbkowania
   echo "Wybierz domyślną częstotliwość próbkowania (Sample Rate):"
-  echo "1) 44.1 kHz (Standard CD)"
-  echo "2) 48 kHz (Standard wideo/pro)"
-  echo "3) 96 kHz (Hi-Res)"
-  echo "4) 192 kHz (High End)"
-  echo "5) 384 kHz (Ultra Hi-Res - Zalecane)"
-  echo "6) 768 kHz (Maksymalna - Eksperymentalne)"
+  echo "[PL] 1) 44.1 kHz (Standard CD)"
+  echo "[PL] 2) 48 kHz (Standard wideo/pro)"
+  echo "[PL] 3) 96 kHz (Hi-Res)"
+  echo "[PL] 4) 192 kHz (High End)"
+  echo "[PL] 5) 384 kHz (Ultra Hi-Res - Zalecane/Domyślne)"
+  echo "[PL] 6) 768 kHz (Maksymalna - Eksperymentalne)"
   echo ""
-  read -p "Twój wybór [1-6] (domyślnie 5): " sr_choice
+  echo "[EN] Select sample rate:"
+  echo "[EN] 1) 44.1 kHz (CD Standard)"
+  echo "[EN] 2) 48 kHz (Video/Pro Standard)"
+  echo "[EN] 3) 96 kHz (Hi-Res)"
+  echo "[EN] 4) 192 kHz (High End)"
+  echo "[EN] 5) 384 kHz (Ultra Hi-Res - Recommended/Default)"
+  echo "[EN] 6) 768 kHz (Maximum - Experimental)"
+  echo ""
+  read -p "Twój wybór / Your choice [1-6] (domyślnie/default 5): " sr_choice
   case $sr_choice in
     1) SAMPLE_RATE="44100" ;;
     2) SAMPLE_RATE="48000" ;;
@@ -145,14 +156,22 @@ configure_quality() {
 
   # Wybór metody resamplingu PulseAudio
   echo "Wybierz metodę resamplingu dla PulseAudio:"
-  echo "1) speex-float-1 (Szybka, niska jakość)"
-  echo "2) speex-float-5 (Dobra jakość, zbalansowana)"
-  echo "3) speex-float-10 (Bardzo dobra jakość)"
-  echo "4) soxr (Najwyższa jakość, większe CPU)"
-  echo "5) soxr very high (Jakość studyjna)"
-  echo "6) soxr highest (Maksymalna wierność)"
+  echo "[PL] 1) speex-float-1 (Szybka, niska jakość)"
+  echo "[PL] 2) speex-float-5 (Dobra jakość, zbalansowana)"
+  echo "[PL] 3) speex-float-10 (Bardzo dobra jakość)"
+  echo "[PL] 4) soxr (Najwyższa jakość, większe CPU)"
+  echo "[PL] 5) soxr very high (Jakość studyjna)"
+  echo "[PL] 6) soxr highest (Maksymalna wierność - Domyślna)"
   echo ""
-  read -p "Twój wybór [1-6] (domyślnie 6): " rs_choice
+  echo "[EN] Select PulseAudio resample method:"
+  echo "[EN] 1) speex-float-1 (Fast, low quality)"
+  echo "[EN] 2) speex-float-5 (Good quality, balanced)"
+  echo "[EN] 3) speex-float-10 (Very good quality)"
+  echo "[EN] 4) soxr (Highest quality, more CPU)"
+  echo "[EN] 5) soxr very high (Studio quality)"
+  echo "[EN] 6) soxr highest (Maximum fidelity - Default)"
+  echo ""
+  read -p "Twój wybór / Your choice [1-6] (domyślnie/default 6): " rs_choice
   case $rs_choice in
     1) RESAMPLE_METHOD="speex-float-1" ;;
     2) RESAMPLE_METHOD="speex-float-5" ;;
@@ -171,9 +190,9 @@ configure_quality() {
   else
     MPD_CONVERTER="soxr very high"
   fi
-  echo "Dostosowano konwerter MPD: ${MPD_CONVERTER}"
+  echo "Dostosowano konwerter MPD / MPD converter adjusted: ${MPD_CONVERTER}"
   echo ""
-  read -p "Naciśnij Enter, aby powrócić do menu..."
+  read -p "Naciśnij Enter, aby powrócić do menu... / Press Enter to return to menu..."
 }
 
 # ==========================================
