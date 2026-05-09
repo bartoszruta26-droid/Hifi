@@ -702,11 +702,15 @@ auto_update_depth "3"
 zeroconf_enabled "no"
 EOF
 
-  # 4. Boot config
+  # 4. Boot config - zachowaj komentarze i nieużywane wpisy
   if [ -f "$BOOT_CFG" ]; then
     cp "$BOOT_CFG" "$STAGING_DIR/config.txt"
-    # Usuń stare dtoverlay audio
-    sed -i '/^dtoverlay=.*dac\|^dtoverlay=.*audio\|^dtparam=audio/d' "$STAGING_DIR/config.txt"
+    # Komentarzowanie starych dtoverlay audio (zachowując oryginalne linie)
+    # Nie usuwamy żadnych linii - tylko dezaktywujemy aktywne wpisy audio
+    sed -i 's/^\(dtoverlay=.*dac\)/#DEPRECATED: \1/' "$STAGING_DIR/config.txt"
+    sed -i 's/^\(dtoverlay=.*audio\)/#DEPRECATED: \1/' "$STAGING_DIR/config.txt"
+    sed -i 's/^\(dtparam=audio=on\)/#DEPRECATED: \1/' "$STAGING_DIR/config.txt"
+    # Uwaga: wszystkie inne linie (w tym komentarze #, //, ;) pozostają nienaruszone
   else
     touch "$STAGING_DIR/config.txt"
   fi
