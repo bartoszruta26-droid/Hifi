@@ -216,7 +216,7 @@ configure_quality() {
   if [[ -v rate_map[$sr_choice] ]]; then
     SAMPLE_RATE="${rate_map[$sr_choice]}"
   else
-    SAMPLE_RATE="${RATES_ARRAY[-1]}"
+    SAMPLE_RATE="${RATES_ARRAY[$(( ${#RATES_ARRAY[@]} - 1 ))]}"
   fi
   
   echo "Ustawiono Sample Rate: ${SAMPLE_RATE} Hz"
@@ -830,11 +830,14 @@ main_menu() {
         fi
         ;;
       6)
-        LATEST=$(ls -td "$BACKUP_BASE"/*/ 2>/dev/null | head -n1)
+        LATEST=$(find "$BACKUP_BASE" -mindepth 1 -maxdepth 1 -type d -printf "%T@ %p\n" 2>/dev/null | sort -nr | head -n1 | cut -d" " -f2-)
         if [ -z "$LATEST" ]; then
           echo "Brak backupu!"
         else
-          compare_files "$LATEST/daemon.conf" "$PULSE_DAEMON"
+          compare_files "$LATEST/$(basename "$PULSE_DAEMON")" "$STAGING_DIR/daemon.conf"
+          compare_files "$LATEST/$(basename "$PULSE_DEFAULT")" "$STAGING_DIR/default.pa"
+          compare_files "$LATEST/$(basename "$MPD_CONF")" "$STAGING_DIR/mpd.conf"
+          compare_files "$LATEST/$(basename "$BOOT_CFG")" "$STAGING_DIR/config.txt"
         fi
         read -p "Enter..."
         ;;
