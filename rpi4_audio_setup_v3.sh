@@ -1152,7 +1152,7 @@ install_snapcast_server() {
       return 1
     fi
     
-    dpkg -i "snapserver_${version}_*.deb" || apt-get install -f -y
+    dpkg -i snapserver_${version}_*.deb || apt-get install -f -y
   }
   
   # Konfiguracja
@@ -1200,7 +1200,7 @@ EOF
 audio_output {
   type    "pipe"
   name    "Snapcast"
-  command "/usr/bin/snapfifo"
+  command "/bin/cat /tmp/snapfifo"
   format  "44100:16:2"
   auto_resample "no"
 }
@@ -1249,7 +1249,7 @@ install_snapcast_client() {
         wget -q "https://github.com/badaix/snapcast/releases/download/v${version}/snapclient_${version}_arm64.deb"
       fi
       
-      dpkg -i "snapclient_${version}_*.deb" || apt-get install -f -y
+      dpkg -i snapclient_${version}_*.deb || apt-get install -f -y
     }
   else
     apt-get install -y snapclient || {
@@ -1264,7 +1264,7 @@ install_snapcast_client() {
         wget -q "https://github.com/badaix/snapcast/releases/download/v${version}/snapclient_${version}_arm64.deb"
       fi
       
-      dpkg -i "snapclient_${version}_*.deb" || apt-get install -f -y
+      dpkg -i snapclient_${version}_*.deb || apt-get install -f -y
     }
   fi
   
