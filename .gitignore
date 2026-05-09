@@ -1,40 +1,28 @@
-# Logs and temp files
+*.pyc
+__pycache__/
+*.o
+*.obj
+dist/
+build/
+.venv/
+venv/
+node_modules/
 *.log
 *.tmp
 *.swp
-
-# Environment
 .env
 .env.local
-*.env.*
-
-# Editors
+.env.*
 .vscode/
 .idea/
-
-# Dependencies
-node_modules/
-__pycache__/
-*.pyc
-.venv/
-venv/
-.mypy_cache/
-.pytest_cache/
-dist/
-build/
-target/
-.gradle/
-
-# System files
 .DS_Store
 Thumbs.db
-
-# Coverage
+target/
+.gradle/
+.mypy_cache/
+.pytest_cache/
 coverage/
 htmlcov/
-.coverage
-
-# Compressed files
 *.zip
 *.gz
 *.tar
