@@ -1199,10 +1199,10 @@ EOF
   cat > "$MPD_MPD_CONF" << EOF
 audio_output {
   type    "pipe"
-  name    "Snapcast"
-  command "/bin/cat /tmp/snapfifo"
-  format  "44100:16:2"
-  auto_resample "no"
+  name    \"Snapcast\"
+  command \"/bin/sh -c 'cat > /tmp/snapfifo'\"
+  format  \"44100:16:2\"
+  auto_resample \"no\"
 }
 EOF
   
