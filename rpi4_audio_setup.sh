@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
+# shellcheck shell=bash
 set -euo pipefail
 
 # ==========================================
 # Konfiguracja Audio RPi4 + HAT (Max Quality)
-# Autor: AI Assistant | Wersja: 2.1 (CLI + Menu + PL/EN)
+# Autor: AI Assistant | Wersja: 2.2 (CLI + Menu + PL/EN)
 # Przeznaczenie: Debian Trixie/Bookworm, PulseAudio + MPD
 # Obsługa: R38 HAT i inne popularne DAC HAT
 # ==========================================
@@ -122,7 +123,7 @@ preview_file() {
     echo -e "${CYAN}--- Podgląd: $title ($file) ---${NC}"
     head -n 50 "$file"
     echo -e "${CYAN}---------------------------------------${NC}"
-    read -p "Naciśnij Enter, aby kontynuować..."
+    read -r -p "Naciśnij Enter, aby kontynuować..."
   else
     echo -e "${RED}⚠️  Plik nie istnieje: $file${NC}"
   fi
@@ -229,7 +230,7 @@ configure_quality() {
     echo ""
     
     local default_choice=${#RATES_ARRAY[@]}
-    read -p "Your choice [1-$default_choice] (default $default_choice): " sr_choice
+    read -r -p "Your choice [1-$default_choice] (default $default_choice): " sr_choice
     
     if [[ -v rate_map[$sr_choice] ]]; then
       SAMPLE_RATE="${rate_map[$sr_choice]}"
@@ -251,7 +252,7 @@ configure_quality() {
       local bit_max=2
     fi
     echo ""
-    read -p "Your choice [1-$bit_max] (default $bit_max): " bit_choice
+    read -r -p "Your choice [1-$bit_max] (default $bit_max): " bit_choice
     
     case $bit_choice in
       1) BIT_DEPTH="16" ;;
@@ -278,7 +279,7 @@ configure_quality() {
       local fmt_max=4
     fi
     echo ""
-    read -p "Your choice [1-$fmt_max] (default 4): " fmt_choice
+    read -r -p "Your choice [1-$fmt_max] (default 4): " fmt_choice
     case $fmt_choice in
       1) OUTPUT_FORMAT="s16le" ;;
       2) OUTPUT_FORMAT="s24le" ;;
@@ -308,7 +309,7 @@ configure_quality() {
     echo "2) software (PulseAudio software mixer)"
     echo "3) none (No mixer - direct access)"
     echo ""
-    read -p "Your choice [1-3] (default 1): " mixer_choice
+    read -r -p "Your choice [1-3] (default 1): " mixer_choice
     case $mixer_choice in
       1) MIXER_TYPE="hardware" ;;
       2) MIXER_TYPE="software" ;;
@@ -323,7 +324,7 @@ configure_quality() {
     echo "1) logarithmic (Logarithmic - natural for human ear)"
     echo "2) linear (Linear - uniform change)"
     echo ""
-    read -p "Your choice [1-2] (default 1): " curve_choice
+    read -r -p "Your choice [1-2] (default 1): " curve_choice
     case $curve_choice in
       1) VOLUME_CURVE="logarithmic" ;;
       2) VOLUME_CURVE="linear" ;;
@@ -337,7 +338,7 @@ configure_quality() {
     echo "1) Enabled (Recommended when converting 24/32 -> lower)"
     echo "2) Disabled (Clean signal, possible artifacts)"
     echo ""
-    read -p "Your choice [1-2] (default 1): " dither_choice
+    read -r -p "Your choice [1-2] (default 1): " dither_choice
     case $dither_choice in
       1) DITHER_ENABLED="yes" ;;
       2) DITHER_ENABLED="no" ;;
@@ -353,7 +354,7 @@ configure_quality() {
     echo "3) 40960 (40MB - High stability)"
     echo "4) 81920 (80MB - Maximum stability, higher latency)"
     echo ""
-    read -p "Your choice [1-4] (default 2): " buffer_choice
+    read -r -p "Your choice [1-4] (default 2): " buffer_choice
     case $buffer_choice in
       1) BUFFER_SIZE="10240" ;;
       2) BUFFER_SIZE="20480" ;;
@@ -370,7 +371,7 @@ configure_quality() {
     echo "2) external (External clock - if available)"
     echo "3) auto (Automatic selection)"
     echo ""
-    read -p "Your choice [1-3] (default 1): " clock_choice
+    read -r -p "Your choice [1-3] (default 1): " clock_choice
     case $clock_choice in
       1) CLOCK_SOURCE="internal" ;;
       2) CLOCK_SOURCE="external" ;;
@@ -385,7 +386,7 @@ configure_quality() {
     echo "1) Enabled (Avoids clicks when changing volume)"
     echo "2) Disabled (Immediate volume change)"
     echo ""
-    read -p "Your choice [1-2] (default 1): " zc_choice
+    read -r -p "Your choice [1-2] (default 1): " zc_choice
     case $zc_choice in
       1) ZERO_CROSSING="yes" ;;
       2) ZERO_CROSSING="no" ;;
@@ -399,7 +400,7 @@ configure_quality() {
     echo "1) Enabled (Gentle clipping, less audible artifacts)"
     echo "2) Disabled (Hard clip - sharp clipping)"
     echo ""
-    read -p "Your choice [1-2] (default 2): " sc_choice
+    read -r -p "Your choice [1-2] (default 2): " sc_choice
     case $sc_choice in
       1) SOFT_CLIP="yes" ;;
       2) SOFT_CLIP="no" ;;
@@ -417,7 +418,7 @@ configure_quality() {
     echo "5) soxr very high (Studio quality)"
     echo "6) soxr highest (Maximum fidelity)"
     echo ""
-    read -p "Your choice [1-6] (default 6): " rs_choice
+    read -r -p "Your choice [1-6] (default 6): " rs_choice
     case $rs_choice in
       1) RESAMPLE_METHOD="speex-float-1" ;;
       2) RESAMPLE_METHOD="speex-float-5" ;;
@@ -436,7 +437,7 @@ configure_quality() {
     echo "2) Master (DAC generates clock for CPU - better sync)"
     echo "3) Auto (Automatic selection based on hardware)"
     echo ""
-    read -p "Your choice [1-3] (default 1): " clock_mode_choice
+    read -r -p "Your choice [1-3] (default 1): " clock_mode_choice
     case $clock_mode_choice in
       1) CLOCK_MODE="slave" ;;
       2) CLOCK_MODE="master" ;;
@@ -454,7 +455,7 @@ configure_quality() {
     echo "4) 50 ms (Large delay)"
     echo "5) 100 ms (Maximum)"
     echo ""
-    read -p "Your choice [1-5] (default 1): " delay_choice
+    read -r -p "Your choice [1-5] (default 1): " delay_choice
     case $delay_choice in
       1) OUTPUT_DELAY="0" ;;
       2) OUTPUT_DELAY="10" ;;
@@ -471,7 +472,7 @@ configure_quality() {
     echo "1) Enabled (Power saving, no background noise)"
     echo "2) Disabled (Continuous signal hold)"
     echo ""
-    read -p "Your choice [1-2] (default 1): " auto_mute_choice
+    read -r -p "Your choice [1-2] (default 1): " auto_mute_choice
     case $auto_mute_choice in
       1) AUTO_MUTE="yes" ;;
       2) AUTO_MUTE="no" ;;
@@ -488,7 +489,7 @@ configure_quality() {
     echo "4) +9 dB (Large gain)"
     echo "5) +12 dB (Maximum gain - watch for clipping)"
     echo ""
-    read -p "Your choice [1-5] (default 1): " gain_choice
+    read -r -p "Your choice [1-5] (default 1): " gain_choice
     case $gain_choice in
       1) VOLUME_GAIN="0" ;;
       2) VOLUME_GAIN="3" ;;
@@ -506,7 +507,7 @@ configure_quality() {
     echo "2) On (For old CD recordings with pre-emphasis)"
     echo "3) Auto (Automatic detection of metadata flag)"
     echo ""
-    read -p "Your choice [1-3] (default 1): " deemphasis_choice
+    read -r -p "Your choice [1-3] (default 1): " deemphasis_choice
     case $deemphasis_choice in
       1) DEEMPHASIS="off" ;;
       2) DEEMPHASIS="on" ;;
@@ -522,7 +523,7 @@ configure_quality() {
     echo "2) Mono (Summing to one channel)"
     echo "3) Reverse Stereo (Swap L/R channels)"
     echo ""
-    read -p "Your choice [1-3] (default 1): " channel_choice
+    read -r -p "Your choice [1-3] (default 1): " channel_choice
     case $channel_choice in
       1) CHANNEL_MODE="stereo" ;;
       2) CHANNEL_MODE="mono" ;;
@@ -566,7 +567,7 @@ configure_quality() {
     echo ""
     
     local default_choice=${#RATES_ARRAY[@]}
-    read -p "Twój wybór [1-$default_choice] (domyślnie $default_choice): " sr_choice
+    read -r -p "Twój wybór [1-$default_choice] (domyślnie $default_choice): " sr_choice
     
     if [[ -v rate_map[$sr_choice] ]]; then
       SAMPLE_RATE="${rate_map[$sr_choice]}"
@@ -588,7 +589,7 @@ configure_quality() {
       local bit_max=2
     fi
     echo ""
-    read -p "Twój wybór [1-$bit_max] (domyślnie $bit_max): " bit_choice
+    read -r -p "Twój wybór [1-$bit_max] (domyślnie $bit_max): " bit_choice
     
     case $bit_choice in
       1) BIT_DEPTH="16" ;;
@@ -615,7 +616,7 @@ configure_quality() {
       local fmt_max=4
     fi
     echo ""
-    read -p "Twój wybór [1-$fmt_max] (domyślnie 4): " fmt_choice
+    read -r -p "Twój wybór [1-$fmt_max] (domyślnie 4): " fmt_choice
     case $fmt_choice in
       1) OUTPUT_FORMAT="s16le" ;;
       2) OUTPUT_FORMAT="s24le" ;;
@@ -645,7 +646,7 @@ configure_quality() {
     echo "2) software (Mikser programowy PulseAudio)"
     echo "3) none (Bez miksera - bezpośredni dostęp)"
     echo ""
-    read -p "Twój wybór [1-3] (domyślnie 1): " mixer_choice
+    read -r -p "Twój wybór [1-3] (domyślnie 1): " mixer_choice
     case $mixer_choice in
       1) MIXER_TYPE="hardware" ;;
       2) MIXER_TYPE="software" ;;
@@ -660,7 +661,7 @@ configure_quality() {
     echo "1) logarithmic (Logarytmiczna - naturalna dla ludzkiego ucha)"
     echo "2) linear (Liniowa - równomierna zmiana)"
     echo ""
-    read -p "Twój wybór [1-2] (domyślnie 1): " curve_choice
+    read -r -p "Twój wybór [1-2] (domyślnie 1): " curve_choice
     case $curve_choice in
       1) VOLUME_CURVE="logarithmic" ;;
       2) VOLUME_CURVE="linear" ;;
@@ -674,7 +675,7 @@ configure_quality() {
     echo "1) Włączony (Zalecane przy konwersji 24/32 -> niższe)"
     echo "2) Wyłączony (Czysty sygnał, możliwe artefakty)"
     echo ""
-    read -p "Twój wybór [1-2] (domyślnie 1): " dither_choice
+    read -r -p "Twój wybór [1-2] (domyślnie 1): " dither_choice
     case $dither_choice in
       1) DITHER_ENABLED="yes" ;;
       2) DITHER_ENABLED="no" ;;
@@ -690,7 +691,7 @@ configure_quality() {
     echo "3) 40960 (40MB - Wysoka stabilność)"
     echo "4) 81920 (80MB - Maksymalna stabilność, wyższe opóźnienie)"
     echo ""
-    read -p "Twój wybór [1-4] (domyślnie 2): " buffer_choice
+    read -r -p "Twój wybór [1-4] (domyślnie 2): " buffer_choice
     case $buffer_choice in
       1) BUFFER_SIZE="10240" ;;
       2) BUFFER_SIZE="20480" ;;
@@ -707,7 +708,7 @@ configure_quality() {
     echo "2) external (Zewnętrzny zegar - jeśli dostępny)"
     echo "3) auto (Automatyczny wybór)"
     echo ""
-    read -p "Twój wybór [1-3] (domyślnie 1): " clock_choice
+    read -r -p "Twój wybór [1-3] (domyślnie 1): " clock_choice
     case $clock_choice in
       1) CLOCK_SOURCE="internal" ;;
       2) CLOCK_SOURCE="external" ;;
@@ -722,7 +723,7 @@ configure_quality() {
     echo "1) Włączony (Unika kliknięć przy zmianie głośności)"
     echo "2) Wyłączony (Natychmiastowa zmiana głośności)"
     echo ""
-    read -p "Twój wybór [1-2] (domyślnie 1): " zc_choice
+    read -r -p "Twój wybór [1-2] (domyślnie 1): " zc_choice
     case $zc_choice in
       1) ZERO_CROSSING="yes" ;;
       2) ZERO_CROSSING="no" ;;
@@ -736,7 +737,7 @@ configure_quality() {
     echo "1) Włączony (Łagodne przycinanie, mniej słyszalne artefakty)"
     echo "2) Wyłączony (Hard clip - ostre przycinanie)"
     echo ""
-    read -p "Twój wybór [1-2] (domyślnie 2): " sc_choice
+    read -r -p "Twój wybór [1-2] (domyślnie 2): " sc_choice
     case $sc_choice in
       1) SOFT_CLIP="yes" ;;
       2) SOFT_CLIP="no" ;;
@@ -754,7 +755,7 @@ configure_quality() {
     echo "5) soxr very high (Jakość studyjna)"
     echo "6) soxr highest (Maksymalna wierność)"
     echo ""
-    read -p "Twój wybór [1-6] (domyślnie 6): " rs_choice
+    read -r -p "Twój wybór [1-6] (domyślnie 6): " rs_choice
     case $rs_choice in
       1) RESAMPLE_METHOD="speex-float-1" ;;
       2) RESAMPLE_METHOD="speex-float-5" ;;
@@ -773,7 +774,7 @@ configure_quality() {
     echo "2) Master (DAC generuje zegar dla CPU - lepsza synchronizacja)"
     echo "3) Auto (Automatyczny wybór na podstawie sprzętu)"
     echo ""
-    read -p "Twój wybór [1-3] (domyślnie 1): " clock_mode_choice
+    read -r -p "Twój wybór [1-3] (domyślnie 1): " clock_mode_choice
     case $clock_mode_choice in
       1) CLOCK_MODE="slave" ;;
       2) CLOCK_MODE="master" ;;
@@ -791,7 +792,7 @@ configure_quality() {
     echo "4) 50 ms (Duże opóźnienie)"
     echo "5) 100 ms (Maksymalne)"
     echo ""
-    read -p "Twój wybór [1-5] (domyślnie 1): " delay_choice
+    read -r -p "Twój wybór [1-5] (domyślnie 1): " delay_choice
     case $delay_choice in
       1) OUTPUT_DELAY="0" ;;
       2) OUTPUT_DELAY="10" ;;
@@ -808,7 +809,7 @@ configure_quality() {
     echo "1) Włączony (Oszczędność energii, brak szumów tła)"
     echo "2) Wyłączony (Ciągłe podtrzymanie sygnału)"
     echo ""
-    read -p "Twój wybór [1-2] (domyślnie 1): " auto_mute_choice
+    read -r -p "Twój wybór [1-2] (domyślnie 1): " auto_mute_choice
     case $auto_mute_choice in
       1) AUTO_MUTE="yes" ;;
       2) AUTO_MUTE="no" ;;
@@ -825,7 +826,7 @@ configure_quality() {
     echo "4) +9 dB (Duże wzmocnienie)"
     echo "5) +12 dB (Maksymalne wzmocnienie - uważaj na przesterowania)"
     echo ""
-    read -p "Twój wybór [1-5] (domyślnie 1): " gain_choice
+    read -r -p "Twój wybór [1-5] (domyślnie 1): " gain_choice
     case $gain_choice in
       1) VOLUME_GAIN="0" ;;
       2) VOLUME_GAIN="3" ;;
@@ -843,7 +844,7 @@ configure_quality() {
     echo "2) Włączony (Dla starych nagrań CD z pre-emphasis)"
     echo "3) Auto (Automatyczna detekcja flagi w metadanych)"
     echo ""
-    read -p "Twój wybór [1-3] (domyślnie 1): " deemphasis_choice
+    read -r -p "Twój wybór [1-3] (domyślnie 1): " deemphasis_choice
     case $deemphasis_choice in
       1) DEEMPHASIS="off" ;;
       2) DEEMPHASIS="on" ;;
@@ -859,7 +860,7 @@ configure_quality() {
     echo "2) Mono (Sumowanie do jednego kanału)"
     echo "3) Reverse Stereo (Zamiana kanałów L/R)"
     echo ""
-    read -p "Twój wybór [1-3] (domyślnie 1): " channel_choice
+    read -r -p "Twój wybór [1-3] (domyślnie 1): " channel_choice
     case $channel_choice in
       1) CHANNEL_MODE="stereo" ;;
       2) CHANNEL_MODE="mono" ;;
@@ -880,11 +881,11 @@ configure_quality() {
   if [ "$MENU_LANG" = "en" ]; then
     echo "Adjusted MPD converter: ${MPD_CONVERTER}"
     echo ""
-    read -p "Press Enter to return to menu..."
+    read -r -p "Press Enter to return to menu..."
   else
     echo "Dostosowano konwerter MPD: ${MPD_CONVERTER}"
     echo ""
-    read -p "Naciśnij Enter, aby powrócić do menu..."
+    read -r -p "Naciśnij Enter, aby powrócić do menu..."
   fi
 }
 
@@ -893,6 +894,7 @@ configure_quality() {
 # ==========================================
 
 select_model() {
+  local result_var="${1:-}"
   print_header
   if [ "$MENU_LANG" = "en" ]; then
     echo -e "${YELLOW}⏳ Select DAC HAT model...${NC}"
@@ -910,7 +912,7 @@ select_model() {
     echo "10) AudioInjector (WM8731)"
     echo "11) Other / Custom (enter manually)"
     echo ""
-    read -p "Your choice [1-11] (default 1): " hat_choice
+    read -r -p "Your choice [1-11] (default 1): " hat_choice
   else
     echo -e "${YELLOW}⏳ Wybór modelu DAC HAT...${NC}"
     echo ""
@@ -927,7 +929,7 @@ select_model() {
     echo "10) AudioInjector (WM8731)"
     echo "11) Inny / Własny (wpisz ręcznie)"
     echo ""
-    read -p "Twój wybór [1-11] (domyślnie 1): " hat_choice
+    read -r -p "Twój wybór [1-11] (domyślnie 1): " hat_choice
   fi
   
   case $hat_choice in
@@ -943,9 +945,9 @@ select_model() {
     10) HAT_MODEL="audioinjector-wm8731-audio" ;;
     11) 
       if [ "$MENU_LANG" = "en" ]; then
-        read -p "Enter dtoverlay name (e.g., hifiberry-dac): " CUSTOM_HAT
+        read -r -p "Enter dtoverlay name (e.g., hifiberry-dac): " CUSTOM_HAT
       else
-        read -p "Wpisz nazwę dtoverlay (np. hifiberry-dac): " CUSTOM_HAT
+        read -r -p "Wpisz nazwę dtoverlay (np. hifiberry-dac): " CUSTOM_HAT
       fi
       HAT_MODEL="${CUSTOM_HAT:-justboom-dac}"
       ;;
@@ -957,7 +959,13 @@ select_model() {
   else
     echo "Wybrano overlay: ${HAT_MODEL}"
   fi
-  echo "$HAT_MODEL"
+  
+  # Jeśli podano zmienną wynikową, ustaw ją, inaczej wypisz na stdout
+  if [ -n "$result_var" ]; then
+    printf -v "$result_var" '%s' "$HAT_MODEL"
+  else
+    echo "$HAT_MODEL"
+  fi
 }
 
 # ==========================================
@@ -972,7 +980,7 @@ gen_configs() {
   
   # Użyj wybranego modelu lub wybierz go jeśli nie podano
   if [ -z "$hat_model" ] || [ "$hat_model" = "justboom-dac" ]; then
-    hat_model=$(select_model | tail -n1)
+    select_model hat_model
   fi
   
   HAT_MODEL="$hat_model"
@@ -1067,7 +1075,7 @@ install_packages() {
   # Jeśli użytkownik chce TUI, można dopisać 'dialog'
   
   echo "Instalowanie: $DEPS"
-  apt-get install -y $DEPS
+  apt-get install -y --no-install-recommends "$DEPS"
   
   # Wyłączenie PipeWire-Pulse jeśli aktywne
   if systemctl is-active --quiet pipewire-pulse 2>/dev/null; then
@@ -1084,7 +1092,7 @@ install_packages() {
 apply_configs() {
   print_header
   echo -e "${RED}⚠️  UWAGA: Ta operacja zmodyfikuje pliki systemowe!${NC}"
-  read -p "Czy na pewno chcesz kontynuować? (tak/nie): " confirm
+  read -r -p "Czy na pewno chcesz kontynuować? (tak/nie): " confirm
   if [ "$confirm" != "tak" ]; then
     echo "Anulowano."
     return 0
@@ -1155,7 +1163,7 @@ EOF
     # Dodaj nowe linie na końcu pliku
     echo "" >> "$MPD_CONF"
     echo "# Nowe ustawienia audio HQ $(date)" >> "$MPD_CONF"
-    cat "$STAGING_DIR/mpd_changes.txt" | grep -v "^#" >> "$MPD_CONF"
+    grep -v "^#" "$STAGING_DIR/mpd_changes.txt" >> "$MPD_CONF"
     echo "✅ Zmodyfikowano $MPD_CONF"
   else
     echo "⚠️  Brak pliku $MPD_CONF, tworzenie nowego..."
@@ -1176,7 +1184,7 @@ audio_output {
 }
 
 EOF
-    cat "$STAGING_DIR/mpd_changes.txt" | grep -v "^#" >> "$MPD_CONF"
+    grep -v "^#" "$STAGING_DIR/mpd_changes.txt" >> "$MPD_CONF"
   fi
 
   # 4. Modyfikacja /boot/firmware/config.txt - bez nadpisywania, z backupem
@@ -1256,7 +1264,7 @@ EOF
   echo -e "${GREEN}✅ Konfiguracja zastosowana!${NC}"
   echo ""
   echo "⚠️  WAŻNE: Aby zmiany w config.txt (HAT) zadziałały, konieczny jest RESTART Raspberry Pi."
-  read -p "Czy chcesz teraz zrestartować system? (tak/nie): " reboot_now
+  read -r -p "Czy chcesz teraz zrestartować system? (tak/nie): " reboot_now
   if [ "$reboot_now" = "tak" ]; then
     reboot
   fi
@@ -1268,7 +1276,7 @@ test_audio() {
   echo ""
   echo "1. Test ALSA (bezpośrednio do sprzętu)"
   aplay -l | grep -i dac || echo "Nie wykryto DACa przez aplay."
-  read -p "Naciśnij Enter, aby odtworzyć dźwięk testowy (sinus)..."
+  read -r -p "Naciśnij Enter, aby odtworzyć dźwięk testowy (sinus)..."
   speaker-test -t sine -f 440 -l 3 || echo "Błąd speaker-test. Czy usługa audio działa?"
   
   echo ""
@@ -1280,7 +1288,7 @@ test_audio() {
      paplay --raw --rate=44100 --channels=2 --format=s16le /tmp/test.raw 2>/dev/null || echo "PA nie odpowiada."
   fi
   echo ""
-  read -p "Naciśnij Enter, aby wrócić..."
+  read -r -p "Naciśnij Enter, aby wrócić..."
 }
 
 # ==========================================
@@ -1310,7 +1318,7 @@ main_menu() {
       echo "7) 🔊 Audio Test"
       echo "8) 🛑 Exit"
       echo ""
-      read -p "Select option [0-8]: " choice
+      read -r -p "Select option [0-8]: " choice
     else
       echo -e "${CYAN}MENU GŁÓWNE:${NC}"
       if [ -n "$hat_model_selected" ]; then
@@ -1329,7 +1337,7 @@ main_menu() {
       echo "7) 🔊 Test Dźwięku"
       echo "8) 🛑 Wyjdź"
       echo ""
-      read -p "Wybierz opcję [0-8]: " choice
+      read -r -p "Wybierz opcję [0-8]: " choice
     fi
 
     case $choice in
@@ -1341,7 +1349,7 @@ main_menu() {
           MENU_LANG="en"
           echo "Zmieniono język na angielski (English)"
         fi
-        read -p "Press Enter to continue..."
+        read -r -p "Press Enter to continue..."
         ;;
       1) install_packages ;;
       2) backup_files ;;
@@ -1351,13 +1359,13 @@ main_menu() {
           echo "1) Boot Config"
           echo "2) Pulse Daemon"
           echo "3) MPD Config"
-          read -p "Select [1-3]: " sub
+          read -r -p "Select [1-3]: " sub
         else
           echo "Podgląd:"
           echo "1) Boot Config"
           echo "2) Pulse Daemon"
           echo "3) MPD Config"
-          read -p "Wybierz [1-3]: " sub
+          read -r -p "Wybierz [1-3]: " sub
         fi
         case $sub in
           1) preview_file "$BOOT_CFG" "Boot Config" ;;
@@ -1376,7 +1384,7 @@ main_menu() {
           else
             echo -e "${RED}⚠️  Najpierw wybierz model DAC (opcja 4)!${NC}"
           fi
-          read -p "Enter..."
+          read -r -p "Enter..."
         else
           gen_configs "$hat_model_selected"
           apply_configs
@@ -1396,7 +1404,7 @@ main_menu() {
           compare_files "$LATEST/$(basename "$MPD_CONF")" "$STAGING_DIR/mpd.conf"
           compare_files "$LATEST/$(basename "$BOOT_CFG")" "$STAGING_DIR/config.txt.preview"
         fi
-        read -p "Enter..."
+        read -r -p "Enter..."
         ;;
       7) test_audio ;;
       8) exit 0 ;;

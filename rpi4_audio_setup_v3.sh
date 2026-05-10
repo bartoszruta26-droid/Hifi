@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
+# shellcheck shell=bash
 set -euo pipefail
 
 # ==========================================
 # RPi4 Audio HQ Setup + Streaming + Multiroom
-# Autor: AI Assistant | Wersja: 3.0
+# Autor: AI Assistant | Wersja: 3.1
 # Przeznaczenie: Debian Trixie/Bookworm, PulseAudio + MPD + Snapcast
 # Funkcje: Auto-Detect HAT, Streaming, Monitoring, Multiroom
 # ==========================================
@@ -213,7 +214,7 @@ detect_hat_auto() {
     echo "  - Brak sterowników w kernelu"
     echo "  - Konieczność ręcznej konfiguracji dtoverlay"
     echo ""
-    read -p "Czy chcesz wybrać model ręcznie? (tak/nie): " manual_choice
+    read -r -p "Czy chcesz wybrać model ręcznie? (tak/nie): " manual_choice
     if [ "$manual_choice" = "tak" ]; then
       select_model_interactive
     else
@@ -223,7 +224,7 @@ detect_hat_auto() {
   fi
   
   echo ""
-  read -p "Naciśnij Enter, aby kontynuować..."
+  read -r -p "Naciśnij Enter, aby kontynuować..."
 }
 
 # ==========================================
@@ -248,7 +249,7 @@ select_model_interactive() {
   echo "11) Inny / Własny (wpisz ręcznie)"
   echo "0) Powrót"
   echo ""
-  read -p "Twój wybór [0-11] (domyślnie 1): " hat_choice
+  read -r -p "Twój wybór [0-11] (domyślnie 1): " hat_choice
   
   case $hat_choice in
     0) return 1 ;;
@@ -263,7 +264,7 @@ select_model_interactive() {
     9) HAT_MODEL="googlevoicehat-soundcard" ;;
     10) HAT_MODEL="audioinjector-wm8731-audio" ;;
     11) 
-      read -p "Wpisz nazwę dtoverlay (np. hifiberry-dac): " CUSTOM_HAT
+      read -r -p "Wpisz nazwę dtoverlay (np. hifiberry-dac): " CUSTOM_HAT
       HAT_MODEL="${CUSTOM_HAT:-justboom-dac}"
       ;;
     *) HAT_MODEL="justboom-dac" ;;
@@ -320,7 +321,7 @@ configure_quality() {
   echo ""
   
   local default_choice=${#RATES_ARRAY[@]}
-  read -p "Twój wybór [1-$default_choice] (domyślnie $default_choice): " sr_choice
+  read -r -p "Twój wybór [1-$default_choice] (domyślnie $default_choice): " sr_choice
   
   if [[ -v rate_map[$sr_choice] ]]; then
     SAMPLE_RATE="${rate_map[$sr_choice]}"
@@ -341,7 +342,7 @@ configure_quality() {
     local bit_max=2
   fi
   echo ""
-  read -p "Twój wybór [1-$bit_max] (domyślnie $bit_max): " bit_choice
+  read -r -p "Twój wybór [1-$bit_max] (domyślnie $bit_max): " bit_choice
   
   case $bit_choice in
     1) BIT_DEPTH="16" ;;
@@ -367,7 +368,7 @@ configure_quality() {
     local fmt_max=4
   fi
   echo ""
-  read -p "Twój wybór [1-$fmt_max] (domyślnie 4): " fmt_choice
+  read -r -p "Twój wybór [1-$fmt_max] (domyślnie 4): " fmt_choice
   case $fmt_choice in
     1) OUTPUT_FORMAT="s16le" ;;
     2) OUTPUT_FORMAT="s24le" ;;
@@ -396,7 +397,7 @@ configure_quality() {
   echo "2) software (Mikser programowy PulseAudio)"
   echo "3) none (Bez miksera - bezpośredni dostęp)"
   echo ""
-  read -p "Twój wybór [1-3] (domyślnie 1): " mixer_choice
+  read -r -p "Twój wybór [1-3] (domyślnie 1): " mixer_choice
   case $mixer_choice in
     1) MIXER_TYPE="hardware" ;;
     2) MIXER_TYPE="software" ;;
@@ -410,7 +411,7 @@ configure_quality() {
   echo "1) logarithmic (Logarytmiczna - naturalna dla ludzkiego ucha)"
   echo "2) linear (Liniowa - równomierna zmiana)"
   echo ""
-  read -p "Twój wybór [1-2] (domyślnie 1): " curve_choice
+  read -r -p "Twój wybór [1-2] (domyślnie 1): " curve_choice
   case $curve_choice in
     1) VOLUME_CURVE="logarithmic" ;;
     2) VOLUME_CURVE="linear" ;;
@@ -423,7 +424,7 @@ configure_quality() {
   echo "1) Włączony (Zalecane przy konwersji 24/32 -> niższe)"
   echo "2) Wyłączony (Czysty sygnał, możliwe artefakty)"
   echo ""
-  read -p "Twój wybór [1-2] (domyślnie 1): " dither_choice
+  read -r -p "Twój wybór [1-2] (domyślnie 1): " dither_choice
   case $dither_choice in
     1) DITHER_ENABLED="yes" ;;
     2) DITHER_ENABLED="no" ;;
@@ -438,7 +439,7 @@ configure_quality() {
   echo "3) 40960 (40MB - Wysoka stabilność)"
   echo "4) 81920 (80MB - Maksymalna stabilność, wyższe opóźnienie)"
   echo ""
-  read -p "Twój wybór [1-4] (domyślnie 2): " buffer_choice
+  read -r -p "Twój wybór [1-4] (domyślnie 2): " buffer_choice
   case $buffer_choice in
     1) BUFFER_SIZE="10240" ;;
     2) BUFFER_SIZE="20480" ;;
@@ -457,7 +458,7 @@ configure_quality() {
   echo "5) soxr very high (Jakość studyjna)"
   echo "6) soxr highest (Maksymalna wierność)"
   echo ""
-  read -p "Twój wybór [1-6] (domyślnie 6): " rs_choice
+  read -r -p "Twój wybór [1-6] (domyślnie 6): " rs_choice
   case $rs_choice in
     1) RESAMPLE_METHOD="speex-float-1" ;;
     2) RESAMPLE_METHOD="speex-float-5" ;;
@@ -470,7 +471,7 @@ configure_quality() {
   echo "Ustawiono Resample Method: ${RESAMPLE_METHOD}"
   echo ""
   
-  read -p "Naciśnij Enter, aby zapisać ustawienia..."
+  read -r -p "Naciśnij Enter, aby zapisać ustawienia..."
 }
 
 # ==========================================
@@ -582,7 +583,7 @@ install_packages() {
   DEPS="mpd pulseaudio pulseaudio-utils alsa-utils sox libsoxr-dev avahi-daemon"
   
   echo "Instalowanie podstawowych pakietów: $DEPS"
-  apt-get install -y $DEPS
+  apt-get install -y --no-install-recommends "$DEPS"
   
   # Wyłączenie PipeWire-Pulse jeśli aktywne
   if systemctl is-active --quiet pipewire-pulse 2>/dev/null; then
@@ -599,7 +600,7 @@ install_packages() {
 apply_configs() {
   print_header
   echo -e "${RED}⚠️  UWAGA: Ta operacja nadpisze pliki systemowe!${NC}"
-  read -p "Czy na pewno chcesz kontynuować? (tak/nie): " confirm
+  read -r -p "Czy na pewno chcesz kontynuować? (tak/nie): " confirm
   if [ "$confirm" != "tak" ]; then
     echo "Anulowano."
     return 0
@@ -629,7 +630,7 @@ apply_configs() {
   echo -e "${GREEN}✅ Konfiguracja zastosowana!${NC}"
   echo ""
   echo "⚠️  WAŻNE: Aby zmiany w config.txt (HAT) zadziałały, konieczny jest RESTART."
-  read -p "Czy chcesz teraz zrestartować system? (tak/nie): " reboot_now
+  read -r -p "Czy chcesz teraz zrestartować system? (tak/nie): " reboot_now
   if [ "$reboot_now" = "tak" ]; then
     reboot
   fi
@@ -666,7 +667,7 @@ install_spotify_connect() {
   # Sprawdzenie czy już zainstalowany
   if command -v spotifyd &>/dev/null; then
     echo "Spotifyd jest już zainstalowany."
-    read -p "Czy chcesz przekonfigurować? (tak/nie): " reconfig
+    read -r -p "Czy chcesz przekonfigurować? (tak/nie): " reconfig
     if [ "$reconfig" != "tak" ]; then
       return 0
     fi
@@ -761,7 +762,7 @@ install_airplay() {
   
   if dpkg -l | grep -q shairport-sync; then
     echo "Shairport-sync jest już zainstalowany."
-    read -p "Czy chcesz przekonfigurować? (tak/nie): " reconfig
+    read -r -p "Czy chcesz przekonfigurować? (tak/nie): " reconfig
     if [ "$reconfig" != "tak" ]; then
       return 0
     fi
@@ -810,7 +811,7 @@ install_upnp_dlna() {
   
   if dpkg -l | grep -q minidlna; then
     echo "MiniDLNA jest już zainstalowana."
-    read -p "Czy chcesz przekonfigurować? (tak/nie): " reconfig
+    read -r -p "Czy chcesz przekonfigurować? (tak/nie): " reconfig
     if [ "$reconfig" != "tak" ]; then
       return 0
     fi
@@ -857,7 +858,7 @@ streaming_menu() {
     echo "4) 🔍 Sprawdź status usług streaming"
     echo "0) Powrót do menu głównego"
     echo ""
-    read -p "Wybierz opcję [0-4]: " choice
+    read -r -p "Wybierz opcję [0-4]: " choice
     
     case $choice in
       1) install_spotify_connect ;;
@@ -885,7 +886,7 @@ streaming_menu() {
           echo -e "UPnP/DLNA: ${RED}○ Nieaktywny${NC}"
         fi
         echo ""
-        read -p "Naciśnij Enter..."
+        read -r -p "Naciśnij Enter..."
         ;;
       0) return ;;
       *) echo "Nieprawidłowy wybór." ;;
@@ -1021,11 +1022,11 @@ diagnostics_menu() {
     echo "5) 📋 Raport systemowy"
     echo "0) Powrót"
     echo ""
-    read -p "Wybierz opcję [0-5]: " choice
+    read -r -p "Wybierz opcję [0-5]: " choice
     
     case $choice in
-      1) show_audio_status; read -p "Enter..." ;;
-      2) show_system_monitor; read -p "Enter..." ;;
+      1) show_audio_status; read -r -p "Enter..." ;;
+      2) show_system_monitor; read -r -p "Enter..." ;;
       3) monitoring_loop ;;
       4) test_audio ;;
       5)
@@ -1042,7 +1043,7 @@ diagnostics_menu() {
         echo "=== USB Devices ==="
         lsusb 2>/dev/null | head -10 || echo "lsusb niedostępne"
         echo ""
-        read -p "Enter..."
+        read -r -p "Enter..."
         ;;
       0) return ;;
       *) echo "Nieprawidłowy wybór." ;;
@@ -1063,7 +1064,7 @@ test_audio() {
   echo "Test będzie trwał 10 sekund..."
   echo "Powinieneś usłyszeć szum z lewego i prawego kanału."
   echo ""
-  read -p "Naciśnij Enter aby rozpocząć test..."
+  read -r -p "Naciśnij Enter aby rozpocząć test..."
   
   speaker-test -t wav -c 2 -l 3 -r 44100 2>/dev/null
   
@@ -1126,7 +1127,7 @@ install_snapcast_server() {
   
   if dpkg -l | grep -q snapserver; then
     echo "Snapserver jest już zainstalowany."
-    read -p "Czy chcesz przekonfigurować? (tak/nie): " reconfig
+    read -r -p "Czy chcesz przekonfigurować? (tak/nie): " reconfig
     if [ "$reconfig" != "tak" ]; then
       return 0
     fi
@@ -1227,14 +1228,14 @@ install_snapcast_client() {
   
   if dpkg -l | grep -q snapclient; then
     echo "Snapclient jest już zainstalowany."
-    read -p "Czy chcesz przekonfigurować? (tak/nie): " reconfig
+    read -r -p "Czy chcesz przekonfigurować? (tak/nie): " reconfig
     if [ "$reconfig" != "tak" ]; then
       return 0
     fi
   fi
   
   # Pobranie adresu serwera
-  read -p "Podaj adres IP serwera Snapcast: " server_ip
+  read -r -p "Podaj adres IP serwera Snapcast: " server_ip
   
   if dpkg -l | grep -q snapclient; then
     apt-get install -y snapclient || {
@@ -1292,12 +1293,12 @@ snapcast_menu() {
     echo "5) 🌐 Otwórz interfejs webowy"
     echo "0) Powrót"
     echo ""
-    read -p "Wybierz opcję [0-5]: " choice
+    read -r -p "Wybierz opcję [0-5]: " choice
     
     case $choice in
-      1) discover_snapcast_clients; read -p "Enter..." ;;
-      2) install_snapcast_server; read -p "Enter..." ;;
-      3) install_snapcast_client; read -p "Enter..." ;;
+      1) discover_snapcast_clients; read -r -p "Enter..." ;;
+      2) install_snapcast_server; read -r -p "Enter..." ;;
+      3) install_snapcast_client; read -r -p "Enter..." ;;
       4)
         echo ""
         echo "Status Snapcast:"
@@ -1316,13 +1317,13 @@ snapcast_menu() {
         if command -v curl &>/dev/null; then
           curl -s "http://localhost:1780/jsonrpc" -H "Content-Type: application/json" -d '{"jsonrpc":"2.0","method":"Server.GetStatus","id":1}' 2>/dev/null | head -5 || echo "Brak danych"
         fi
-        read -p "Enter..."
+        read -r -p "Enter..."
         ;;
       5)
         local ip
         ip=$(hostname -I | awk '{print $1}')
         echo -e "${GREEN}Otwórz w przeglądarce: http://${ip}:1780${NC}"
-        read -p "Enter..."
+        read -r -p "Enter..."
         ;;
       0) return ;;
       *) echo "Nieprawidłowy wybór." ;;
@@ -1376,7 +1377,7 @@ main_menu() {
     echo ""
     echo "0) 🛑 Wyjdź"
     echo ""
-    read -p "Wybierz opcję [0-9]: " choice
+    read -r -p "Wybierz opcję [0-9]: " choice
     
     case $choice in
       1) detect_hat_auto ;;
@@ -1390,7 +1391,7 @@ main_menu() {
       5)
         if [ -z "$HAT_MODEL" ]; then
           echo -e "${RED}⚠️  Najpierw wybierz model DAC!${NC}"
-          read -p "Enter..."
+          read -r -p "Enter..."
         else
           gen_configs "$HAT_MODEL"
           apply_configs

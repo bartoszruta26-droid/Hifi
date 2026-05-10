@@ -1,1 +1,1 @@
-Nothing should be ignored since only a shell script file (`rpi4_audio_setup.sh`) was modified and no build artifacts, dependencies, or temporary files were included in the changes.
+Nothing should be ignored since only shell script files (.sh) were modified and no build artifacts, dependencies, or temporary files are present in the changes.
