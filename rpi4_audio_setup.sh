@@ -997,9 +997,7 @@ gen_configs() {
 default-sample-format = ${OUTPUT_FORMAT}
 default-sample-rate = ${SAMPLE_RATE}
 alternate-sample-rate = 96000
-avoid-resampling = yes
 resample-method = ${RESAMPLE_METHOD}
-enable-lfe-remixing = no
 flat-volumes = no
 realtime-scheduling = yes
 rlimit-rtprio = 20
@@ -1061,7 +1059,7 @@ install_packages() {
   
   apt-get update -qq
   
-  DEPS="mpd pulseaudio pulseaudio-utils alsa-utils sox libsoxr-dev"
+  DEPS="mpd pulseaudio pulseaudio-utils alsa-utils sox libsoxr-dev mpc"
   # Sprawdź czy dialog jest potrzebny (używamy tylko CLI w tej wersji, ale zostawiamy jako opcję)
   # Jeśli użytkownik chce TUI, można dopisać 'dialog'
   
@@ -1105,8 +1103,7 @@ apply_configs() {
     cp "$PULSE_DAEMON" "$STAGING_DIR/daemon.conf.bak"
     # Skomentuj stare linie i dodaj nowe
     for param in "default-sample-format" "default-sample-rate" "alternate-sample-rate" \
-                 "avoid-resampling" "resample-method" "enable-lfe-remixing" \
-                 "flat-volumes" "realtime-scheduling" "rlimit-rtprio" \
+                 "resample-method" "flat-volumes" "realtime-scheduling" "rlimit-rtprio" \
                  "exit-idle-time" "log-level"; do
       sed -i "s/^${param}[[:space:]]*=.*/#OLD: &/" "$PULSE_DAEMON"
     done
