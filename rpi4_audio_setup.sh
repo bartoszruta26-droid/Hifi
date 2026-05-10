@@ -780,10 +780,8 @@ apply_configs() {
     while IFS= read -r line; do
       # Pomiń komentarze
       [[ "$line" =~ ^# ]] && continue
-      # Wyciągnij nazwę modułu
-      module_name=$(echo "$line" | sed 's/load-module[[:space:]]\+\([^[:space:]]*\).*/\1/')
-      # Sprawdź czy moduł nie jest już załadowany
-      if ! grep -q "^load-module[[:space:]]\+${module_name}" "$PULSE_DEFAULT"; then
+      # Sprawdź czy CAŁA linia (z parametrami) już istnieje w pliku
+      if ! grep -qF "$line" "$PULSE_DEFAULT"; then
         echo "$line" >> "$PULSE_DEFAULT"
         echo "  Dodano: $line"
       fi
@@ -826,6 +824,7 @@ group "audio"
 audio_output {
     type            "pulse"
     name            "RPi4 Hi-Res Pulse"
+    mixer_type      "${MIXER_TYPE}"
 }
 
 EOF
