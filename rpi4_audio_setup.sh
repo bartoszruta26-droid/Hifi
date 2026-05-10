@@ -676,32 +676,33 @@ auto_update_depth "3"
 zeroconf_enabled "no"
 EOF
 
-  # 4. Boot config.txt - przygotuj zmiany
+  # 4. Boot config.txt - przygotuj podgląd zmian (tylko do podglądu/porównania)
   if [ -f "$BOOT_CFG" ]; then
     cp "$BOOT_CFG" "$STAGING_DIR/config.txt.orig"
-    cp "$BOOT_CFG" "$STAGING_DIR/config.txt"
-    # Komentarzowanie starych dtoverlay audio (zachowując oryginalne linie)
-    sed -i 's/^dtoverlay=\(.*dac.*\)$/#DEPRECATED: dtoverlay=\1/' "$STAGING_DIR/config.txt"
-    sed -i 's/^dtoverlay=\(.*audio.*\)$/#DEPRECATED: dtoverlay=\1/' "$STAGING_DIR/config.txt"
-    sed -i 's/^dtparam=audio=on$/#DEPRECATED: dtparam=audio=on/' "$STAGING_DIR/config.txt"
+    # Stwórz kopię pokazującą jakie zmiany zostaną wprowadzone
+    cp "$BOOT_CFG" "$STAGING_DIR/config.txt.preview"
+    sed -i 's/^dtoverlay=\(.*dac.*\)$/#DEPRECATED: dtoverlay=\1/' "$STAGING_DIR/config.txt.preview"
+    sed -i 's/^dtoverlay=\(.*audio.*\)$/#DEPRECATED: dtoverlay=\1/' "$STAGING_DIR/config.txt.preview"
+    sed -i 's/^dtparam=audio=on$/#DEPRECATED: dtparam=audio=on/' "$STAGING_DIR/config.txt.preview"
     
-    # Sprawdź czy już dodano nasz overlay, jeśli nie to dodaj
-    if ! grep -q "^dtoverlay=${HAT_MODEL}$" "$STAGING_DIR/config.txt"; then
+    if ! grep -q "^dtoverlay=${HAT_MODEL}$" "$STAGING_DIR/config.txt.preview"; then
       {
         echo ""
         echo "# Dodane przez skrypt audio HQ $(date)"
         echo "dtoverlay=${HAT_MODEL}"
         echo "dtparam=audio=off"
-      } >> "$STAGING_DIR/config.txt"
+      } >> "$STAGING_DIR/config.txt.preview"
     fi
+    echo "📄 Przygotowano podgląd zmian dla $BOOT_CFG"
   else
-    # Jeśli plik nie istnieje, utwórz nowy z minimalną konfiguracją
+    # Jeśli plik nie istnieje, utwórz przykładowy
     {
       echo "# Raspberry Pi Boot Config"
       echo "# Dodane przez skrypt audio HQ $(date)"
       echo "dtoverlay=${HAT_MODEL}"
       echo "dtparam=audio=off"
-    } > "$STAGING_DIR/config.txt"
+    } > "$STAGING_DIR/config.txt.preview"
+    echo "📄 Przygotowano przykładowy plik $BOOT_CFG"
   fi
 
   echo -e "${GREEN}✅ Pliki wygenerowane w: $STAGING_DIR${NC}"
@@ -831,9 +832,48 @@ EOF
     cat "$STAGING_DIR/mpd_changes.txt" | grep -v "^#" >> "$MPD_CONF"
   fi
 
-  # 4. Kopiowanie config.txt (boot) - tutaj nadpisujemy bo to plik bootowy
-  cp -f "$STAGING_DIR/config.txt" "$BOOT_CFG"
-  echo "✅ Zaktualizowano $BOOT_CFG"
+  # 4. Modyfikacja /boot/firmware/config.txt - bez nadpisywania, z backupem
+  if [ -f "$BOOT_CFG" ]; then
+    # Twórz backup z timestampem
+    BOOT_BACKUP="$BACKUP_BASE/config.txt.$(date +%Y%m%d_%H%M%S).bak"
+    cp "$BOOT_CFG" "$BOOT_BACKUP"
+    echo "📦 Backup: $BOOT_BACKUP"
+    
+    # Skomentuj stare dtoverlay audio (jeśli jeszcze nie zakomentowane)
+    sed -i 's/^dtoverlay=\(.*dac.*\)$/#DEPRECATED: dtoverlay=\1/' "$BOOT_CFG"
+    sed -i 's/^dtoverlay=\(.*audio.*\)$/#DEPRECATED: dtoverlay=\1/' "$BOOT_CFG"
+    sed -i 's/^dtparam=audio=on$/#DEPRECATED: dtparam=audio=on/' "$BOOT_CFG"
+    
+    # Sprawdź czy nasz overlay już istnieje, jeśli nie to dodaj
+    if ! grep -q "^dtoverlay=${HAT_MODEL}$" "$BOOT_CFG"; then
+      {
+        echo ""
+        echo "# Dodane przez skrypt audio HQ $(date)"
+        echo "dtoverlay=${HAT_MODEL}"
+        echo "dtparam=audio=off"
+      } >> "$BOOT_CFG"
+      echo "  Dodano dtoverlay=${HAT_MODEL}"
+    else
+      echo "  dtoverlay=${HAT_MODEL} już istnieje"
+    fi
+    
+    # Upewnij się że dtparam=audio=off jest ustawione
+    if ! grep -q "^dtparam=audio=off$" "$BOOT_CFG"; then
+      echo "dtparam=audio=off" >> "$BOOT_CFG"
+      echo "  Dodano dtparam=audio=off"
+    fi
+    
+    echo "✅ Zmodyfikowano $BOOT_CFG"
+  else
+    echo "⚠️  Brak pliku $BOOT_CFG, tworzenie nowego..."
+    {
+      echo "# Raspberry Pi Boot Config"
+      echo "# Utworzony przez skrypt audio HQ $(date)"
+      echo "dtoverlay=${HAT_MODEL}"
+      echo "dtparam=audio=off"
+    } > "$BOOT_CFG"
+    echo "✅ Utworzono $BOOT_CFG"
+  fi
   
   # Uprawnienia
   chown mpd:audio "$MPD_CONF" 2>/dev/null || true
@@ -984,7 +1024,7 @@ main_menu() {
           compare_files "$LATEST/$(basename "$PULSE_DAEMON")" "$STAGING_DIR/daemon.conf"
           compare_files "$LATEST/$(basename "$PULSE_DEFAULT")" "$STAGING_DIR/default.pa"
           compare_files "$LATEST/$(basename "$MPD_CONF")" "$STAGING_DIR/mpd.conf"
-          compare_files "$LATEST/$(basename "$BOOT_CFG")" "$STAGING_DIR/config.txt"
+          compare_files "$LATEST/$(basename "$BOOT_CFG")" "$STAGING_DIR/config.txt.preview"
         fi
         read -p "Enter..."
         ;;
