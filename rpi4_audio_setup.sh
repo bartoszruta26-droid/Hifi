@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
+# shellcheck shell=bash
 set -euo pipefail
 
 # ==========================================
 # Konfiguracja Audio RPi4 + HAT (Max Quality)
-# Autor: AI Assistant | Wersja: 2.1 (CLI + Menu + PL/EN)
+# Autor: AI Assistant | Wersja: 2.2 (CLI + Menu + PL/EN)
 # Przeznaczenie: Debian Trixie/Bookworm, PulseAudio + MPD
 # Obsługa: R38 HAT i inne popularne DAC HAT
 # ==========================================
@@ -122,7 +123,7 @@ preview_file() {
     echo -e "${CYAN}--- Podgląd: $title ($file) ---${NC}"
     head -n 50 "$file"
     echo -e "${CYAN}---------------------------------------${NC}"
-    read -p "Naciśnij Enter, aby kontynuować..."
+    read -r -p "Naciśnij Enter, aby kontynuować..."
   else
     echo -e "${RED}⚠️  Plik nie istnieje: $file${NC}"
   fi
@@ -194,350 +195,698 @@ configure_quality() {
   IFS=':' read -r max_rate max_bit supported_rates <<< "$dac_caps"
   
   print_header
-  echo -e "${CYAN}⚙️  Konfiguracja Jakości Dźwięku${NC}"
-  echo -e "Model DAC: ${GREEN}$hat_model${NC}"
-  echo -e "Maksymalna częstotliwość: ${GREEN}${max_rate} Hz${NC}"
-  echo -e "Maksymalna głębia bitowa: ${GREEN}${max_bit} bit${NC}"
-  echo ""
   
-  # Parsowanie dostępnych rate do tablicy
-  IFS=',' read -ra RATES_ARRAY <<< "$supported_rates"
-  
-  # Budowanie menu z dostępnymi opcjami
-  echo "Wybierz domyślną częstotliwość próbkowania (Sample Rate):"
-  local idx=1
-  declare -A rate_map
-  for rate in "${RATES_ARRAY[@]}"; do
-    local khz=$((rate / 1000))
-    local label
-    case $rate in
-      44100) label="Standard CD" ;;
-      48000) label="Standard wideo/pro" ;;
-      88200|96000) label="Hi-Res" ;;
-      176400|192000) label="High End" ;;
-      352800|384000) label="Ultra Hi-Res" ;;
-      705600|768000) label="Maksymalna (Eksperymentalne)" ;;
-      *) label="Niestandardowa" ;;
+  # Komunikaty w zależności od języka
+  if [ "$MENU_LANG" = "en" ]; then
+    echo -e "${CYAN}⚙️  Audio Quality Configuration${NC}"
+    echo -e "DAC Model: ${GREEN}$hat_model${NC}"
+    echo -e "Max Frequency: ${GREEN}${max_rate} Hz${NC}"
+    echo -e "Max Bit Depth: ${GREEN}${max_bit} bit${NC}"
+    echo ""
+    
+    # Parsing available rates to array
+    IFS=',' read -ra RATES_ARRAY <<< "$supported_rates"
+    
+    # Building menu with available options
+    echo "Select default Sample Rate:"
+    local idx=1
+    declare -A rate_map
+    for rate in "${RATES_ARRAY[@]}"; do
+      local khz=$((rate / 1000))
+      local label
+      case $rate in
+        44100) label="Standard CD" ;;
+        48000) label="Video/Pro Standard" ;;
+        88200|96000) label="Hi-Res" ;;
+        176400|192000) label="High End" ;;
+        352800|384000) label="Ultra Hi-Res" ;;
+        705600|768000) label="Maximum (Experimental)" ;;
+        *) label="Custom" ;;
+      esac
+      echo "$idx) $rate Hz ($khz kHz) - $label"
+      rate_map[$idx]=$rate
+      ((idx++))
+    done
+    echo ""
+    
+    local default_choice=${#RATES_ARRAY[@]}
+    read -r -p "Your choice [1-$default_choice] (default $default_choice): " sr_choice
+    
+    if [[ -v rate_map[$sr_choice] ]]; then
+      SAMPLE_RATE="${rate_map[$sr_choice]}"
+    else
+      SAMPLE_RATE="${RATES_ARRAY[$(( ${#RATES_ARRAY[@]} - 1 ))]}"
+    fi
+    
+    echo "Set Sample Rate: ${SAMPLE_RATE} Hz"
+    echo ""
+
+    # Bit Depth selection
+    echo "Select Bit Depth:"
+    echo "1) 16 bit (Standard CD)"
+    echo "2) 24 bit (Hi-Res Audio)"
+    if [[ $max_bit -ge 32 ]]; then
+      echo "3) 32 bit (Maximum Quality - Recommended)"
+      local bit_max=3
+    else
+      local bit_max=2
+    fi
+    echo ""
+    read -r -p "Your choice [1-$bit_max] (default $bit_max): " bit_choice
+    
+    case $bit_choice in
+      1) BIT_DEPTH="16" ;;
+      2) BIT_DEPTH="24" ;;
+      3) BIT_DEPTH="32" ;;
+      *) BIT_DEPTH="$max_bit" ;;
     esac
-    echo "$idx) $rate Hz ($khz kHz) - $label"
-    rate_map[$idx]=$rate
-    ((idx++))
-  done
-  echo ""
-  
-  local default_choice=${#RATES_ARRAY[@]}
-  read -p "Twój wybór [1-$default_choice] (domyślnie $default_choice): " sr_choice
-  
-  if [[ -v rate_map[$sr_choice] ]]; then
-    SAMPLE_RATE="${rate_map[$sr_choice]}"
+    
+    echo "Set Bit Depth: ${BIT_DEPTH} bit"
+    echo ""
+
+    # Output format selection
+    echo "Select Output Format:"
+    echo "1) s16le (16-bit Integer)"
+    echo "2) s24le (24-bit Integer)"
+    if [[ $max_bit -ge 32 ]]; then
+      echo "3) s32le (32-bit Integer)"
+      echo "4) float32le (32-bit Float - Recommended)"
+      echo "5) float64le (64-bit Float - Highest Precision)"
+      local fmt_max=5
+    else
+      echo "3) float32le (32-bit Float - Recommended)"
+      echo "4) float64le (64-bit Float - Highest Precision)"
+      local fmt_max=4
+    fi
+    echo ""
+    read -r -p "Your choice [1-$fmt_max] (default 4): " fmt_choice
+    case $fmt_choice in
+      1) OUTPUT_FORMAT="s16le" ;;
+      2) OUTPUT_FORMAT="s24le" ;;
+      3) 
+        if [[ $max_bit -ge 32 ]]; then
+          OUTPUT_FORMAT="s32le"
+        else
+          OUTPUT_FORMAT="float32le"
+        fi
+        ;;
+      4) 
+        if [[ $max_bit -ge 32 ]] || [[ $fmt_choice -eq 4 && $fmt_max -eq 5 ]]; then
+          OUTPUT_FORMAT="float32le"
+        else
+          OUTPUT_FORMAT="float64le"
+        fi
+        ;;
+      5) OUTPUT_FORMAT="float64le" ;;
+      *) OUTPUT_FORMAT="float32le" ;;
+    esac
+    echo "Set Output Format: ${OUTPUT_FORMAT}"
+    echo ""
+
+    # Mixer type selection
+    echo "Select Mixer Type:"
+    echo "1) hardware (Direct hardware control)"
+    echo "2) software (PulseAudio software mixer)"
+    echo "3) none (No mixer - direct access)"
+    echo ""
+    read -r -p "Your choice [1-3] (default 1): " mixer_choice
+    case $mixer_choice in
+      1) MIXER_TYPE="hardware" ;;
+      2) MIXER_TYPE="software" ;;
+      3) MIXER_TYPE="none" ;;
+      *) MIXER_TYPE="hardware" ;;
+    esac
+    echo "Set Mixer Type: ${MIXER_TYPE}"
+    echo ""
+
+    # Volume curve selection
+    echo "Select Volume Curve:"
+    echo "1) logarithmic (Logarithmic - natural for human ear)"
+    echo "2) linear (Linear - uniform change)"
+    echo ""
+    read -r -p "Your choice [1-2] (default 1): " curve_choice
+    case $curve_choice in
+      1) VOLUME_CURVE="logarithmic" ;;
+      2) VOLUME_CURVE="linear" ;;
+      *) VOLUME_CURVE="logarithmic" ;;
+    esac
+    echo "Set Volume Curve: ${VOLUME_CURVE}"
+    echo ""
+
+    # Dithering
+    echo "Dithering (dither noise during bit-depth conversion):"
+    echo "1) Enabled (Recommended when converting 24/32 -> lower)"
+    echo "2) Disabled (Clean signal, possible artifacts)"
+    echo ""
+    read -r -p "Your choice [1-2] (default 1): " dither_choice
+    case $dither_choice in
+      1) DITHER_ENABLED="yes" ;;
+      2) DITHER_ENABLED="no" ;;
+      *) DITHER_ENABLED="yes" ;;
+    esac
+    echo "Set Dither: ${DITHER_ENABLED}"
+    echo ""
+
+    # Buffer size
+    echo "Audio Buffer Size (in kB):"
+    echo "1) 10240 (10MB - Low latency)"
+    echo "2) 20480 (20MB - Balanced)"
+    echo "3) 40960 (40MB - High stability)"
+    echo "4) 81920 (80MB - Maximum stability, higher latency)"
+    echo ""
+    read -r -p "Your choice [1-4] (default 2): " buffer_choice
+    case $buffer_choice in
+      1) BUFFER_SIZE="10240" ;;
+      2) BUFFER_SIZE="20480" ;;
+      3) BUFFER_SIZE="40960" ;;
+      4) BUFFER_SIZE="81920" ;;
+      *) BUFFER_SIZE="20480" ;;
+    esac
+    echo "Set Buffer Size: ${BUFFER_SIZE} kB"
+    echo ""
+
+    # Clock source
+    echo "Clock Source:"
+    echo "1) internal (Internal DAC clock)"
+    echo "2) external (External clock - if available)"
+    echo "3) auto (Automatic selection)"
+    echo ""
+    read -r -p "Your choice [1-3] (default 1): " clock_choice
+    case $clock_choice in
+      1) CLOCK_SOURCE="internal" ;;
+      2) CLOCK_SOURCE="external" ;;
+      3) CLOCK_SOURCE="auto" ;;
+      *) CLOCK_SOURCE="internal" ;;
+    esac
+    echo "Set Clock Source: ${CLOCK_SOURCE}"
+    echo ""
+
+    # Zero Crossing
+    echo "Zero Crossing (volume change only at wave zeroing):"
+    echo "1) Enabled (Avoids clicks when changing volume)"
+    echo "2) Disabled (Immediate volume change)"
+    echo ""
+    read -r -p "Your choice [1-2] (default 1): " zc_choice
+    case $zc_choice in
+      1) ZERO_CROSSING="yes" ;;
+      2) ZERO_CROSSING="no" ;;
+      *) ZERO_CROSSING="yes" ;;
+    esac
+    echo "Set Zero Crossing: ${ZERO_CROSSING}"
+    echo ""
+
+    # Soft Clip
+    echo "Soft Clip (soft signal clipping):"
+    echo "1) Enabled (Gentle clipping, less audible artifacts)"
+    echo "2) Disabled (Hard clip - sharp clipping)"
+    echo ""
+    read -r -p "Your choice [1-2] (default 2): " sc_choice
+    case $sc_choice in
+      1) SOFT_CLIP="yes" ;;
+      2) SOFT_CLIP="no" ;;
+      *) SOFT_CLIP="no" ;;
+    esac
+    echo "Set Soft Clip: ${SOFT_CLIP}"
+    echo ""
+
+    # Resampling method selection
+    echo "Select PulseAudio Resampling Method:"
+    echo "1) speex-float-1 (Fast, low quality)"
+    echo "2) speex-float-5 (Good quality, balanced)"
+    echo "3) speex-float-10 (Very good quality)"
+    echo "4) soxr (Highest quality, more CPU)"
+    echo "5) soxr very high (Studio quality)"
+    echo "6) soxr highest (Maximum fidelity)"
+    echo ""
+    read -r -p "Your choice [1-6] (default 6): " rs_choice
+    case $rs_choice in
+      1) RESAMPLE_METHOD="speex-float-1" ;;
+      2) RESAMPLE_METHOD="speex-float-5" ;;
+      3) RESAMPLE_METHOD="speex-float-10" ;;
+      4) RESAMPLE_METHOD="soxr" ;;
+      5) RESAMPLE_METHOD="soxr very high" ;;
+      6) RESAMPLE_METHOD="soxr highest" ;;
+      *) RESAMPLE_METHOD="soxr highest" ;;
+    esac
+    echo "Set Resample Method: ${RESAMPLE_METHOD}"
+    echo ""
+
+    # DAC mode (Master/Slave)
+    echo "DAC Clock Mode:"
+    echo "1) Slave (DAC receives clock from CPU - default)"
+    echo "2) Master (DAC generates clock for CPU - better sync)"
+    echo "3) Auto (Automatic selection based on hardware)"
+    echo ""
+    read -r -p "Your choice [1-3] (default 1): " clock_mode_choice
+    case $clock_mode_choice in
+      1) CLOCK_MODE="slave" ;;
+      2) CLOCK_MODE="master" ;;
+      3) CLOCK_MODE="auto" ;;
+      *) CLOCK_MODE="slave" ;;
+    esac
+    echo "Set Clock Mode: ${CLOCK_MODE}"
+    echo ""
+
+    # Output Delay
+    echo "Output Delay (in ms):"
+    echo "1) 0 ms (No delay - default)"
+    echo "2) 10 ms (Light delay)"
+    echo "3) 20 ms (Standard)"
+    echo "4) 50 ms (Large delay)"
+    echo "5) 100 ms (Maximum)"
+    echo ""
+    read -r -p "Your choice [1-5] (default 1): " delay_choice
+    case $delay_choice in
+      1) OUTPUT_DELAY="0" ;;
+      2) OUTPUT_DELAY="10" ;;
+      3) OUTPUT_DELAY="20" ;;
+      4) OUTPUT_DELAY="50" ;;
+      5) OUTPUT_DELAY="100" ;;
+      *) OUTPUT_DELAY="0" ;;
+    esac
+    echo "Set Output Delay: ${OUTPUT_DELAY} ms"
+    echo ""
+
+    # Auto Mute
+    echo "Auto Mute (mute when no signal):"
+    echo "1) Enabled (Power saving, no background noise)"
+    echo "2) Disabled (Continuous signal hold)"
+    echo ""
+    read -r -p "Your choice [1-2] (default 1): " auto_mute_choice
+    case $auto_mute_choice in
+      1) AUTO_MUTE="yes" ;;
+      2) AUTO_MUTE="no" ;;
+      *) AUTO_MUTE="yes" ;;
+    esac
+    echo "Set Auto Mute: ${AUTO_MUTE}"
+    echo ""
+
+    # Volume Gain
+    echo "Volume Gain (in dB):"
+    echo "1) 0 dB (No gain - default)"
+    echo "2) +3 dB (Light gain)"
+    echo "3) +6 dB (Medium gain)"
+    echo "4) +9 dB (Large gain)"
+    echo "5) +12 dB (Maximum gain - watch for clipping)"
+    echo ""
+    read -r -p "Your choice [1-5] (default 1): " gain_choice
+    case $gain_choice in
+      1) VOLUME_GAIN="0" ;;
+      2) VOLUME_GAIN="3" ;;
+      3) VOLUME_GAIN="6" ;;
+      4) VOLUME_GAIN="9" ;;
+      5) VOLUME_GAIN="12" ;;
+      *) VOLUME_GAIN="0" ;;
+    esac
+    echo "Set Volume Gain: ${VOLUME_GAIN} dB"
+    echo ""
+
+    # De-emphasis
+    echo "De-emphasis (50/15μs correction filter):"
+    echo "1) Off (Default - most recordings)"
+    echo "2) On (For old CD recordings with pre-emphasis)"
+    echo "3) Auto (Automatic detection of metadata flag)"
+    echo ""
+    read -r -p "Your choice [1-3] (default 1): " deemphasis_choice
+    case $deemphasis_choice in
+      1) DEEMPHASIS="off" ;;
+      2) DEEMPHASIS="on" ;;
+      3) DEEMPHASIS="auto" ;;
+      *) DEEMPHASIS="off" ;;
+    esac
+    echo "Set De-emphasis: ${DEEMPHASIS}"
+    echo ""
+
+    # Channel Mode
+    echo "Channel Mode:"
+    echo "1) Stereo (Default - left/right)"
+    echo "2) Mono (Summing to one channel)"
+    echo "3) Reverse Stereo (Swap L/R channels)"
+    echo ""
+    read -r -p "Your choice [1-3] (default 1): " channel_choice
+    case $channel_choice in
+      1) CHANNEL_MODE="stereo" ;;
+      2) CHANNEL_MODE="mono" ;;
+      3) CHANNEL_MODE="reverse" ;;
+      *) CHANNEL_MODE="stereo" ;;
+    esac
+    echo "Set Channel Mode: ${CHANNEL_MODE}"
+    echo ""
+    
   else
-    SAMPLE_RATE="${RATES_ARRAY[$(( ${#RATES_ARRAY[@]} - 1 ))]}"
+    # Polski język - oryginalny kod
+    echo -e "${CYAN}⚙️  Konfiguracja Jakości Dźwięku${NC}"
+    echo -e "Model DAC: ${GREEN}$hat_model${NC}"
+    echo -e "Maksymalna częstotliwość: ${GREEN}${max_rate} Hz${NC}"
+    echo -e "Maksymalna głębia bitowa: ${GREEN}${max_bit} bit${NC}"
+    echo ""
+    
+    # Parsowanie dostępnych rate do tablicy
+    IFS=',' read -ra RATES_ARRAY <<< "$supported_rates"
+    
+    # Budowanie menu z dostępnymi opcjami
+    echo "Wybierz domyślną częstotliwość próbkowania (Sample Rate):"
+    local idx=1
+    declare -A rate_map
+    for rate in "${RATES_ARRAY[@]}"; do
+      local khz=$((rate / 1000))
+      local label
+      case $rate in
+        44100) label="Standard CD" ;;
+        48000) label="Standard wideo/pro" ;;
+        88200|96000) label="Hi-Res" ;;
+        176400|192000) label="High End" ;;
+        352800|384000) label="Ultra Hi-Res" ;;
+        705600|768000) label="Maksymalna (Eksperymentalne)" ;;
+        *) label="Niestandardowa" ;;
+      esac
+      echo "$idx) $rate Hz ($khz kHz) - $label"
+      rate_map[$idx]=$rate
+      ((idx++))
+    done
+    echo ""
+    
+    local default_choice=${#RATES_ARRAY[@]}
+    read -r -p "Twój wybór [1-$default_choice] (domyślnie $default_choice): " sr_choice
+    
+    if [[ -v rate_map[$sr_choice] ]]; then
+      SAMPLE_RATE="${rate_map[$sr_choice]}"
+    else
+      SAMPLE_RATE="${RATES_ARRAY[$(( ${#RATES_ARRAY[@]} - 1 ))]}"
+    fi
+    
+    echo "Ustawiono Sample Rate: ${SAMPLE_RATE} Hz"
+    echo ""
+
+    # Wybór głębi bitowej (Bit Depth)
+    echo "Wybierz głębię bitową (Bit Depth):"
+    echo "1) 16 bit (Standard CD)"
+    echo "2) 24 bit (Hi-Res Audio)"
+    if [[ $max_bit -ge 32 ]]; then
+      echo "3) 32 bit (Maksymalna jakość - Zalecane)"
+      local bit_max=3
+    else
+      local bit_max=2
+    fi
+    echo ""
+    read -r -p "Twój wybór [1-$bit_max] (domyślnie $bit_max): " bit_choice
+    
+    case $bit_choice in
+      1) BIT_DEPTH="16" ;;
+      2) BIT_DEPTH="24" ;;
+      3) BIT_DEPTH="32" ;;
+      *) BIT_DEPTH="$max_bit" ;;
+    esac
+    
+    echo "Ustawiono Bit Depth: ${BIT_DEPTH} bit"
+    echo ""
+
+    # Wybór formatu wyjściowego PulseAudio - dopasowany do możliwości DAC
+    echo "Wybierz format wyjściowy (Output Format):"
+    echo "1) s16le (16-bit Integer)"
+    echo "2) s24le (24-bit Integer)"
+    if [[ $max_bit -ge 32 ]]; then
+      echo "3) s32le (32-bit Integer)"
+      echo "4) float32le (32-bit Float - Zalecane)"
+      echo "5) float64le (64-bit Float - Najwyższa precyzja)"
+      local fmt_max=5
+    else
+      echo "3) float32le (32-bit Float - Zalecane)"
+      echo "4) float64le (64-bit Float - Najwyższa precyzja)"
+      local fmt_max=4
+    fi
+    echo ""
+    read -r -p "Twój wybór [1-$fmt_max] (domyślnie 4): " fmt_choice
+    case $fmt_choice in
+      1) OUTPUT_FORMAT="s16le" ;;
+      2) OUTPUT_FORMAT="s24le" ;;
+      3) 
+        if [[ $max_bit -ge 32 ]]; then
+          OUTPUT_FORMAT="s32le"
+        else
+          OUTPUT_FORMAT="float32le"
+        fi
+        ;;
+      4) 
+        if [[ $max_bit -ge 32 ]] || [[ $fmt_choice -eq 4 && $fmt_max -eq 5 ]]; then
+          OUTPUT_FORMAT="float32le"
+        else
+          OUTPUT_FORMAT="float64le"
+        fi
+        ;;
+      5) OUTPUT_FORMAT="float64le" ;;
+      *) OUTPUT_FORMAT="float32le" ;;
+    esac
+    echo "Ustawiono Output Format: ${OUTPUT_FORMAT}"
+    echo ""
+
+    # Wybór typu miksera
+    echo "Wybierz typ miksera (Mixer Type):"
+    echo "1) hardware (Bezpośrednia kontrola sprzętu)"
+    echo "2) software (Mikser programowy PulseAudio)"
+    echo "3) none (Bez miksera - bezpośredni dostęp)"
+    echo ""
+    read -r -p "Twój wybór [1-3] (domyślnie 1): " mixer_choice
+    case $mixer_choice in
+      1) MIXER_TYPE="hardware" ;;
+      2) MIXER_TYPE="software" ;;
+      3) MIXER_TYPE="none" ;;
+      *) MIXER_TYPE="hardware" ;;
+    esac
+    echo "Ustawiono Mixer Type: ${MIXER_TYPE}"
+    echo ""
+
+    # Wybór krzywej głośności
+    echo "Wybierz krzywą głośności (Volume Curve):"
+    echo "1) logarithmic (Logarytmiczna - naturalna dla ludzkiego ucha)"
+    echo "2) linear (Liniowa - równomierna zmiana)"
+    echo ""
+    read -r -p "Twój wybór [1-2] (domyślnie 1): " curve_choice
+    case $curve_choice in
+      1) VOLUME_CURVE="logarithmic" ;;
+      2) VOLUME_CURVE="linear" ;;
+      *) VOLUME_CURVE="logarithmic" ;;
+    esac
+    echo "Ustawiono Volume Curve: ${VOLUME_CURVE}"
+    echo ""
+
+    # Dithering
+    echo "Dithering (szum ditherujący przy konwersji bit-depth):"
+    echo "1) Włączony (Zalecane przy konwersji 24/32 -> niższe)"
+    echo "2) Wyłączony (Czysty sygnał, możliwe artefakty)"
+    echo ""
+    read -r -p "Twój wybór [1-2] (domyślnie 1): " dither_choice
+    case $dither_choice in
+      1) DITHER_ENABLED="yes" ;;
+      2) DITHER_ENABLED="no" ;;
+      *) DITHER_ENABLED="yes" ;;
+    esac
+    echo "Ustawiono Dither: ${DITHER_ENABLED}"
+    echo ""
+
+    # Rozmiar bufora
+    echo "Rozmiar bufora audio (Audio Buffer Size w kB):"
+    echo "1) 10240 (10MB - Niskie opóźnienie)"
+    echo "2) 20480 (20MB - Zbalansowane)"
+    echo "3) 40960 (40MB - Wysoka stabilność)"
+    echo "4) 81920 (80MB - Maksymalna stabilność, wyższe opóźnienie)"
+    echo ""
+    read -r -p "Twój wybór [1-4] (domyślnie 2): " buffer_choice
+    case $buffer_choice in
+      1) BUFFER_SIZE="10240" ;;
+      2) BUFFER_SIZE="20480" ;;
+      3) BUFFER_SIZE="40960" ;;
+      4) BUFFER_SIZE="81920" ;;
+      *) BUFFER_SIZE="20480" ;;
+    esac
+    echo "Ustawiono Buffer Size: ${BUFFER_SIZE} kB"
+    echo ""
+
+    # Źródło zegara
+    echo "Źródło zegara (Clock Source):"
+    echo "1) internal (Wewnętrzny zegar DAC)"
+    echo "2) external (Zewnętrzny zegar - jeśli dostępny)"
+    echo "3) auto (Automatyczny wybór)"
+    echo ""
+    read -r -p "Twój wybór [1-3] (domyślnie 1): " clock_choice
+    case $clock_choice in
+      1) CLOCK_SOURCE="internal" ;;
+      2) CLOCK_SOURCE="external" ;;
+      3) CLOCK_SOURCE="auto" ;;
+      *) CLOCK_SOURCE="internal" ;;
+    esac
+    echo "Ustawiono Clock Source: ${CLOCK_SOURCE}"
+    echo ""
+
+    # Zero Crossing
+    echo "Zero Crossing (zmiana głośności tylko przy zerowaniu fali):"
+    echo "1) Włączony (Unika kliknięć przy zmianie głośności)"
+    echo "2) Wyłączony (Natychmiastowa zmiana głośności)"
+    echo ""
+    read -r -p "Twój wybór [1-2] (domyślnie 1): " zc_choice
+    case $zc_choice in
+      1) ZERO_CROSSING="yes" ;;
+      2) ZERO_CROSSING="no" ;;
+      *) ZERO_CROSSING="yes" ;;
+    esac
+    echo "Ustawiono Zero Crossing: ${ZERO_CROSSING}"
+    echo ""
+
+    # Soft Clip
+    echo "Soft Clip (miękkie przycinanie sygnału):"
+    echo "1) Włączony (Łagodne przycinanie, mniej słyszalne artefakty)"
+    echo "2) Wyłączony (Hard clip - ostre przycinanie)"
+    echo ""
+    read -r -p "Twój wybór [1-2] (domyślnie 2): " sc_choice
+    case $sc_choice in
+      1) SOFT_CLIP="yes" ;;
+      2) SOFT_CLIP="no" ;;
+      *) SOFT_CLIP="no" ;;
+    esac
+    echo "Ustawiono Soft Clip: ${SOFT_CLIP}"
+    echo ""
+
+    # Wybór metody resamplingu PulseAudio
+    echo "Wybierz metodę resamplingu dla PulseAudio:"
+    echo "1) speex-float-1 (Szybka, niska jakość)"
+    echo "2) speex-float-5 (Dobra jakość, zbalansowana)"
+    echo "3) speex-float-10 (Bardzo dobra jakość)"
+    echo "4) soxr (Najwyższa jakość, większe CPU)"
+    echo "5) soxr very high (Jakość studyjna)"
+    echo "6) soxr highest (Maksymalna wierność)"
+    echo ""
+    read -r -p "Twój wybór [1-6] (domyślnie 6): " rs_choice
+    case $rs_choice in
+      1) RESAMPLE_METHOD="speex-float-1" ;;
+      2) RESAMPLE_METHOD="speex-float-5" ;;
+      3) RESAMPLE_METHOD="speex-float-10" ;;
+      4) RESAMPLE_METHOD="soxr" ;;
+      5) RESAMPLE_METHOD="soxr very high" ;;
+      6) RESAMPLE_METHOD="soxr highest" ;;
+      *) RESAMPLE_METHOD="soxr highest" ;;
+    esac
+    echo "Ustawiono Resample Method: ${RESAMPLE_METHOD}"
+    echo ""
+
+    # Tryb pracy DAC (Master/Slave)
+    echo "Tryb pracy DAC (Clock Mode):"
+    echo "1) Slave (DAC otrzymuje zegar od CPU - domyślne)"
+    echo "2) Master (DAC generuje zegar dla CPU - lepsza synchronizacja)"
+    echo "3) Auto (Automatyczny wybór na podstawie sprzętu)"
+    echo ""
+    read -r -p "Twój wybór [1-3] (domyślnie 1): " clock_mode_choice
+    case $clock_mode_choice in
+      1) CLOCK_MODE="slave" ;;
+      2) CLOCK_MODE="master" ;;
+      3) CLOCK_MODE="auto" ;;
+      *) CLOCK_MODE="slave" ;;
+    esac
+    echo "Ustawiono Clock Mode: ${CLOCK_MODE}"
+    echo ""
+
+    # Output Delay (opóźnienie wyjścia w ms)
+    echo "Opóźnienie wyjścia audio (Output Delay w ms):"
+    echo "1) 0 ms (Brak opóźnienia - domyślne)"
+    echo "2) 10 ms (Lekkie opóźnienie)"
+    echo "3) 20 ms (Standardowe)"
+    echo "4) 50 ms (Duże opóźnienie)"
+    echo "5) 100 ms (Maksymalne)"
+    echo ""
+    read -r -p "Twój wybór [1-5] (domyślnie 1): " delay_choice
+    case $delay_choice in
+      1) OUTPUT_DELAY="0" ;;
+      2) OUTPUT_DELAY="10" ;;
+      3) OUTPUT_DELAY="20" ;;
+      4) OUTPUT_DELAY="50" ;;
+      5) OUTPUT_DELAY="100" ;;
+      *) OUTPUT_DELAY="0" ;;
+    esac
+    echo "Ustawiono Output Delay: ${OUTPUT_DELAY} ms"
+    echo ""
+
+    # Auto Mute (automatyczne wyciszenie przy braku sygnału)
+    echo "Auto Mute (wyciszenie przy braku sygnału):"
+    echo "1) Włączony (Oszczędność energii, brak szumów tła)"
+    echo "2) Wyłączony (Ciągłe podtrzymanie sygnału)"
+    echo ""
+    read -r -p "Twój wybór [1-2] (domyślnie 1): " auto_mute_choice
+    case $auto_mute_choice in
+      1) AUTO_MUTE="yes" ;;
+      2) AUTO_MUTE="no" ;;
+      *) AUTO_MUTE="yes" ;;
+    esac
+    echo "Ustawiono Auto Mute: ${AUTO_MUTE}"
+    echo ""
+
+    # Volume Boost/Gain (wzmocnienie sygnału w dB)
+    echo "Wzmocnienie głośności (Volume Gain w dB):"
+    echo "1) 0 dB (Brak wzmocnienia - domyślne)"
+    echo "2) +3 dB (Lekkie wzmocnienie)"
+    echo "3) +6 dB (Średnie wzmocnienie)"
+    echo "4) +9 dB (Duże wzmocnienie)"
+    echo "5) +12 dB (Maksymalne wzmocnienie - uważaj na przesterowania)"
+    echo ""
+    read -r -p "Twój wybór [1-5] (domyślnie 1): " gain_choice
+    case $gain_choice in
+      1) VOLUME_GAIN="0" ;;
+      2) VOLUME_GAIN="3" ;;
+      3) VOLUME_GAIN="6" ;;
+      4) VOLUME_GAIN="9" ;;
+      5) VOLUME_GAIN="12" ;;
+      *) VOLUME_GAIN="0" ;;
+    esac
+    echo "Ustawiono Volume Gain: ${VOLUME_GAIN} dB"
+    echo ""
+
+    # De-emphasis (filtr korekcyjny)
+    echo "De-emphasis (filtr korekcyjny 50/15μs):"
+    echo "1) Wyłączony (Domyślne - większość nagrań)"
+    echo "2) Włączony (Dla starych nagrań CD z pre-emphasis)"
+    echo "3) Auto (Automatyczna detekcja flagi w metadanych)"
+    echo ""
+    read -r -p "Twój wybór [1-3] (domyślnie 1): " deemphasis_choice
+    case $deemphasis_choice in
+      1) DEEMPHASIS="off" ;;
+      2) DEEMPHASIS="on" ;;
+      3) DEEMPHASIS="auto" ;;
+      *) DEEMPHASIS="off" ;;
+    esac
+    echo "Ustawiono De-emphasis: ${DEEMPHASIS}"
+    echo ""
+
+    # Tryb kanałów (Mono/Stereo)
+    echo "Tryb kanałów (Channel Mode):"
+    echo "1) Stereo (Domyślne - lewy/prawy)"
+    echo "2) Mono (Sumowanie do jednego kanału)"
+    echo "3) Reverse Stereo (Zamiana kanałów L/R)"
+    echo ""
+    read -r -p "Twój wybór [1-3] (domyślnie 1): " channel_choice
+    case $channel_choice in
+      1) CHANNEL_MODE="stereo" ;;
+      2) CHANNEL_MODE="mono" ;;
+      3) CHANNEL_MODE="reverse" ;;
+      *) CHANNEL_MODE="stereo" ;;
+    esac
+    echo "Ustawiono Channel Mode: ${CHANNEL_MODE}"
+    echo ""
   fi
   
-  echo "Ustawiono Sample Rate: ${SAMPLE_RATE} Hz"
-  echo ""
-
-  # Wybór głębi bitowej (Bit Depth)
-  echo "Wybierz głębię bitową (Bit Depth):"
-  echo "1) 16 bit (Standard CD)"
-  echo "2) 24 bit (Hi-Res Audio)"
-  if [[ $max_bit -ge 32 ]]; then
-    echo "3) 32 bit (Maksymalna jakość - Zalecane)"
-    local bit_max=3
-  else
-    local bit_max=2
-  fi
-  echo ""
-  read -p "Twój wybór [1-$bit_max] (domyślnie $bit_max): " bit_choice
-  
-  case $bit_choice in
-    1) BIT_DEPTH="16" ;;
-    2) BIT_DEPTH="24" ;;
-    3) BIT_DEPTH="32" ;;
-    *) BIT_DEPTH="$max_bit" ;;
-  esac
-  
-  echo "Ustawiono Bit Depth: ${BIT_DEPTH} bit"
-  echo ""
-
-  # Wybór formatu wyjściowego PulseAudio - dopasowany do możliwości DAC
-  echo "Wybierz format wyjściowy (Output Format):"
-  echo "1) s16le (16-bit Integer)"
-  echo "2) s24le (24-bit Integer)"
-  if [[ $max_bit -ge 32 ]]; then
-    echo "3) s32le (32-bit Integer)"
-    echo "4) float32le (32-bit Float - Zalecane)"
-    echo "5) float64le (64-bit Float - Najwyższa precyzja)"
-    local fmt_max=5
-  else
-    echo "3) float32le (32-bit Float - Zalecane)"
-    echo "4) float64le (64-bit Float - Najwyższa precyzja)"
-    local fmt_max=4
-  fi
-  echo ""
-  read -p "Twój wybór [1-$fmt_max] (domyślnie 4): " fmt_choice
-  case $fmt_choice in
-    1) OUTPUT_FORMAT="s16le" ;;
-    2) OUTPUT_FORMAT="s24le" ;;
-    3) 
-      if [[ $max_bit -ge 32 ]]; then
-        OUTPUT_FORMAT="s32le"
-      else
-        OUTPUT_FORMAT="float32le"
-      fi
-      ;;
-    4) 
-      if [[ $max_bit -ge 32 ]] || [[ $fmt_choice -eq 4 && $fmt_max -eq 5 ]]; then
-        OUTPUT_FORMAT="float32le"
-      else
-        OUTPUT_FORMAT="float64le"
-      fi
-      ;;
-    5) OUTPUT_FORMAT="float64le" ;;
-    *) OUTPUT_FORMAT="float32le" ;;
-  esac
-  echo "Ustawiono Output Format: ${OUTPUT_FORMAT}"
-  echo ""
-
-  # Wybór typu miksera
-  echo "Wybierz typ miksera (Mixer Type):"
-  echo "1) hardware (Bezpośrednia kontrola sprzętu)"
-  echo "2) software (Mikser programowy PulseAudio)"
-  echo "3) none (Bez miksera - bezpośredni dostęp)"
-  echo ""
-  read -p "Twój wybór [1-3] (domyślnie 1): " mixer_choice
-  case $mixer_choice in
-    1) MIXER_TYPE="hardware" ;;
-    2) MIXER_TYPE="software" ;;
-    3) MIXER_TYPE="none" ;;
-    *) MIXER_TYPE="hardware" ;;
-  esac
-  echo "Ustawiono Mixer Type: ${MIXER_TYPE}"
-  echo ""
-
-  # Wybór krzywej głośności
-  echo "Wybierz krzywą głośności (Volume Curve):"
-  echo "1) logarithmic (Logarytmiczna - naturalna dla ludzkiego ucha)"
-  echo "2) linear (Liniowa - równomierna zmiana)"
-  echo ""
-  read -p "Twój wybór [1-2] (domyślnie 1): " curve_choice
-  case $curve_choice in
-    1) VOLUME_CURVE="logarithmic" ;;
-    2) VOLUME_CURVE="linear" ;;
-    *) VOLUME_CURVE="logarithmic" ;;
-  esac
-  echo "Ustawiono Volume Curve: ${VOLUME_CURVE}"
-  echo ""
-
-  # Dithering
-  echo "Dithering (szum ditherujący przy konwersji bit-depth):"
-  echo "1) Włączony (Zalecane przy konwersji 24/32 -> niższe)"
-  echo "2) Wyłączony (Czysty sygnał, możliwe artefakty)"
-  echo ""
-  read -p "Twój wybór [1-2] (domyślnie 1): " dither_choice
-  case $dither_choice in
-    1) DITHER_ENABLED="yes" ;;
-    2) DITHER_ENABLED="no" ;;
-    *) DITHER_ENABLED="yes" ;;
-  esac
-  echo "Ustawiono Dither: ${DITHER_ENABLED}"
-  echo ""
-
-  # Rozmiar bufora
-  echo "Rozmiar bufora audio (Audio Buffer Size w kB):"
-  echo "1) 10240 (10MB - Niskie opóźnienie)"
-  echo "2) 20480 (20MB - Zbalansowane)"
-  echo "3) 40960 (40MB - Wysoka stabilność)"
-  echo "4) 81920 (80MB - Maksymalna stabilność, wyższe opóźnienie)"
-  echo ""
-  read -p "Twój wybór [1-4] (domyślnie 2): " buffer_choice
-  case $buffer_choice in
-    1) BUFFER_SIZE="10240" ;;
-    2) BUFFER_SIZE="20480" ;;
-    3) BUFFER_SIZE="40960" ;;
-    4) BUFFER_SIZE="81920" ;;
-    *) BUFFER_SIZE="20480" ;;
-  esac
-  echo "Ustawiono Buffer Size: ${BUFFER_SIZE} kB"
-  echo ""
-
-  # Źródło zegara
-  echo "Źródło zegara (Clock Source):"
-  echo "1) internal (Wewnętrzny zegar DAC)"
-  echo "2) external (Zewnętrzny zegar - jeśli dostępny)"
-  echo "3) auto (Automatyczny wybór)"
-  echo ""
-  read -p "Twój wybór [1-3] (domyślnie 1): " clock_choice
-  case $clock_choice in
-    1) CLOCK_SOURCE="internal" ;;
-    2) CLOCK_SOURCE="external" ;;
-    3) CLOCK_SOURCE="auto" ;;
-    *) CLOCK_SOURCE="internal" ;;
-  esac
-  echo "Ustawiono Clock Source: ${CLOCK_SOURCE}"
-  echo ""
-
-  # Zero Crossing
-  echo "Zero Crossing (zmiana głośności tylko przy zerowaniu fali):"
-  echo "1) Włączony (Unika kliknięć przy zmianie głośności)"
-  echo "2) Wyłączony (Natychmiastowa zmiana głośności)"
-  echo ""
-  read -p "Twój wybór [1-2] (domyślnie 1): " zc_choice
-  case $zc_choice in
-    1) ZERO_CROSSING="yes" ;;
-    2) ZERO_CROSSING="no" ;;
-    *) ZERO_CROSSING="yes" ;;
-  esac
-  echo "Ustawiono Zero Crossing: ${ZERO_CROSSING}"
-  echo ""
-
-  # Soft Clip
-  echo "Soft Clip (miękkie przycinanie sygnału):"
-  echo "1) Włączony (Łagodne przycinanie, mniej słyszalne artefakty)"
-  echo "2) Wyłączony (Hard clip - ostre przycinanie)"
-  echo ""
-  read -p "Twój wybór [1-2] (domyślnie 2): " sc_choice
-  case $sc_choice in
-    1) SOFT_CLIP="yes" ;;
-    2) SOFT_CLIP="no" ;;
-    *) SOFT_CLIP="no" ;;
-  esac
-  echo "Ustawiono Soft Clip: ${SOFT_CLIP}"
-  echo ""
-
-  # Wybór metody resamplingu PulseAudio
-  echo "Wybierz metodę resamplingu dla PulseAudio:"
-  echo "1) speex-float-1 (Szybka, niska jakość)"
-  echo "2) speex-float-5 (Dobra jakość, zbalansowana)"
-  echo "3) speex-float-10 (Bardzo dobra jakość)"
-  echo "4) soxr (Najwyższa jakość, większe CPU)"
-  echo "5) soxr very high (Jakość studyjna)"
-  echo "6) soxr highest (Maksymalna wierność)"
-  echo ""
-  read -p "Twój wybór [1-6] (domyślnie 6): " rs_choice
-  case $rs_choice in
-    1) RESAMPLE_METHOD="speex-float-1" ;;
-    2) RESAMPLE_METHOD="speex-float-5" ;;
-    3) RESAMPLE_METHOD="speex-float-10" ;;
-    4) RESAMPLE_METHOD="soxr" ;;
-    5) RESAMPLE_METHOD="soxr very high" ;;
-    6) RESAMPLE_METHOD="soxr highest" ;;
-    *) RESAMPLE_METHOD="soxr highest" ;;
-  esac
-  echo "Ustawiono Resample Method: ${RESAMPLE_METHOD}"
-  echo ""
-
-  # Tryb pracy DAC (Master/Slave)
-  echo "Tryb pracy DAC (Clock Mode):"
-  echo "1) Slave (DAC otrzymuje zegar od CPU - domyślne)"
-  echo "2) Master (DAC generuje zegar dla CPU - lepsza synchronizacja)"
-  echo "3) Auto (Automatyczny wybór na podstawie sprzętu)"
-  echo ""
-  read -p "Twój wybór [1-3] (domyślnie 1): " clock_mode_choice
-  case $clock_mode_choice in
-    1) CLOCK_MODE="slave" ;;
-    2) CLOCK_MODE="master" ;;
-    3) CLOCK_MODE="auto" ;;
-    *) CLOCK_MODE="slave" ;;
-  esac
-  echo "Ustawiono Clock Mode: ${CLOCK_MODE}"
-  echo ""
-
-  # Output Delay (opóźnienie wyjścia w ms)
-  echo "Opóźnienie wyjścia audio (Output Delay w ms):"
-  echo "1) 0 ms (Brak opóźnienia - domyślne)"
-  echo "2) 10 ms (Lekkie opóźnienie)"
-  echo "3) 20 ms (Standardowe)"
-  echo "4) 50 ms (Duże opóźnienie)"
-  echo "5) 100 ms (Maksymalne)"
-  echo ""
-  read -p "Twój wybór [1-5] (domyślnie 1): " delay_choice
-  case $delay_choice in
-    1) OUTPUT_DELAY="0" ;;
-    2) OUTPUT_DELAY="10" ;;
-    3) OUTPUT_DELAY="20" ;;
-    4) OUTPUT_DELAY="50" ;;
-    5) OUTPUT_DELAY="100" ;;
-    *) OUTPUT_DELAY="0" ;;
-  esac
-  echo "Ustawiono Output Delay: ${OUTPUT_DELAY} ms"
-  echo ""
-
-  # Auto Mute (automatyczne wyciszenie przy braku sygnału)
-  echo "Auto Mute (wyciszenie przy braku sygnału):"
-  echo "1) Włączony (Oszczędność energii, brak szumów tła)"
-  echo "2) Wyłączony (Ciągłe podtrzymanie sygnału)"
-  echo ""
-  read -p "Twój wybór [1-2] (domyślnie 1): " auto_mute_choice
-  case $auto_mute_choice in
-    1) AUTO_MUTE="yes" ;;
-    2) AUTO_MUTE="no" ;;
-    *) AUTO_MUTE="yes" ;;
-  esac
-  echo "Ustawiono Auto Mute: ${AUTO_MUTE}"
-  echo ""
-
-  # Volume Boost/Gain (wzmocnienie sygnału w dB)
-  echo "Wzmocnienie głośności (Volume Gain w dB):"
-  echo "1) 0 dB (Brak wzmocnienia - domyślne)"
-  echo "2) +3 dB (Lekkie wzmocnienie)"
-  echo "3) +6 dB (Średnie wzmocnienie)"
-  echo "4) +9 dB (Duże wzmocnienie)"
-  echo "5) +12 dB (Maksymalne wzmocnienie - uważaj na przesterowania)"
-  echo ""
-  read -p "Twój wybór [1-5] (domyślnie 1): " gain_choice
-  case $gain_choice in
-    1) VOLUME_GAIN="0" ;;
-    2) VOLUME_GAIN="3" ;;
-    3) VOLUME_GAIN="6" ;;
-    4) VOLUME_GAIN="9" ;;
-    5) VOLUME_GAIN="12" ;;
-    *) VOLUME_GAIN="0" ;;
-  esac
-  echo "Ustawiono Volume Gain: ${VOLUME_GAIN} dB"
-  echo ""
-
-  # De-emphasis (filtr korekcyjny)
-  echo "De-emphasis (filtr korekcyjny 50/15μs):"
-  echo "1) Wyłączony (Domyślne - większość nagrań)"
-  echo "2) Włączony (Dla starych nagrań CD z pre-emphasis)"
-  echo "3) Auto (Automatyczna detekcja flagi w metadanych)"
-  echo ""
-  read -p "Twój wybór [1-3] (domyślnie 1): " deemphasis_choice
-  case $deemphasis_choice in
-    1) DEEMPHASIS="off" ;;
-    2) DEEMPHASIS="on" ;;
-    3) DEEMPHASIS="auto" ;;
-    *) DEEMPHASIS="off" ;;
-  esac
-  echo "Ustawiono De-emphasis: ${DEEMPHASIS}"
-  echo ""
-
-  # Tryb kanałów (Mono/Stereo)
-  echo "Tryb kanałów (Channel Mode):"
-  echo "1) Stereo (Domyślne - lewy/prawy)"
-  echo "2) Mono (Sumowanie do jednego kanału)"
-  echo "3) Reverse Stereo (Zamiana kanałów L/R)"
-  echo ""
-  read -p "Twój wybór [1-3] (domyślnie 1): " channel_choice
-  case $channel_choice in
-    1) CHANNEL_MODE="stereo" ;;
-    2) CHANNEL_MODE="mono" ;;
-    3) CHANNEL_MODE="reverse" ;;
-    *) CHANNEL_MODE="stereo" ;;
-  esac
-  echo "Ustawiono Channel Mode: ${CHANNEL_MODE}"
-  echo ""
-
   # Automatyczne dopasowanie MPD
   if [[ "$RESAMPLE_METHOD" == soxr* ]]; then
     MPD_CONVERTER="soxr highest"
   else
     MPD_CONVERTER="soxr very high"
   fi
-  echo "Dostosowano konwerter MPD: ${MPD_CONVERTER}"
-  echo ""
-  read -p "Naciśnij Enter, aby powrócić do menu..."
+  
+  if [ "$MENU_LANG" = "en" ]; then
+    echo "Adjusted MPD converter: ${MPD_CONVERTER}"
+    echo ""
+    read -r -p "Press Enter to return to menu..."
+  else
+    echo "Dostosowano konwerter MPD: ${MPD_CONVERTER}"
+    echo ""
+    read -r -p "Naciśnij Enter, aby powrócić do menu..."
+  fi
 }
 
 # ==========================================
@@ -545,6 +894,7 @@ configure_quality() {
 # ==========================================
 
 select_model() {
+  local result_var="${1:-}"
   print_header
   if [ "$MENU_LANG" = "en" ]; then
     echo -e "${YELLOW}⏳ Select DAC HAT model...${NC}"
@@ -562,7 +912,7 @@ select_model() {
     echo "10) AudioInjector (WM8731)"
     echo "11) Other / Custom (enter manually)"
     echo ""
-    read -p "Your choice [1-11] (default 1): " hat_choice
+    read -r -p "Your choice [1-11] (default 1): " hat_choice
   else
     echo -e "${YELLOW}⏳ Wybór modelu DAC HAT...${NC}"
     echo ""
@@ -579,7 +929,7 @@ select_model() {
     echo "10) AudioInjector (WM8731)"
     echo "11) Inny / Własny (wpisz ręcznie)"
     echo ""
-    read -p "Twój wybór [1-11] (domyślnie 1): " hat_choice
+    read -r -p "Twój wybór [1-11] (domyślnie 1): " hat_choice
   fi
   
   case $hat_choice in
@@ -595,9 +945,9 @@ select_model() {
     10) HAT_MODEL="audioinjector-wm8731-audio" ;;
     11) 
       if [ "$MENU_LANG" = "en" ]; then
-        read -p "Enter dtoverlay name (e.g., hifiberry-dac): " CUSTOM_HAT
+        read -r -p "Enter dtoverlay name (e.g., hifiberry-dac): " CUSTOM_HAT
       else
-        read -p "Wpisz nazwę dtoverlay (np. hifiberry-dac): " CUSTOM_HAT
+        read -r -p "Wpisz nazwę dtoverlay (np. hifiberry-dac): " CUSTOM_HAT
       fi
       HAT_MODEL="${CUSTOM_HAT:-justboom-dac}"
       ;;
@@ -609,7 +959,13 @@ select_model() {
   else
     echo "Wybrano overlay: ${HAT_MODEL}"
   fi
-  echo "$HAT_MODEL"
+  
+  # Jeśli podano zmienną wynikową, ustaw ją, inaczej wypisz na stdout
+  if [ -n "$result_var" ]; then
+    printf -v "$result_var" '%s' "$HAT_MODEL"
+  else
+    echo "$HAT_MODEL"
+  fi
 }
 
 # ==========================================
@@ -624,7 +980,7 @@ gen_configs() {
   
   # Użyj wybranego modelu lub wybierz go jeśli nie podano
   if [ -z "$hat_model" ] || [ "$hat_model" = "justboom-dac" ]; then
-    hat_model=$(select_model | tail -n1)
+    select_model hat_model
   fi
   
   HAT_MODEL="$hat_model"
@@ -719,7 +1075,7 @@ install_packages() {
   # Jeśli użytkownik chce TUI, można dopisać 'dialog'
   
   echo "Instalowanie: $DEPS"
-  apt-get install -y $DEPS
+  apt-get install -y --no-install-recommends "$DEPS"
   
   # Wyłączenie PipeWire-Pulse jeśli aktywne
   if systemctl is-active --quiet pipewire-pulse 2>/dev/null; then
@@ -736,7 +1092,7 @@ install_packages() {
 apply_configs() {
   print_header
   echo -e "${RED}⚠️  UWAGA: Ta operacja zmodyfikuje pliki systemowe!${NC}"
-  read -p "Czy na pewno chcesz kontynuować? (tak/nie): " confirm
+  read -r -p "Czy na pewno chcesz kontynuować? (tak/nie): " confirm
   if [ "$confirm" != "tak" ]; then
     echo "Anulowano."
     return 0
@@ -807,7 +1163,7 @@ EOF
     # Dodaj nowe linie na końcu pliku
     echo "" >> "$MPD_CONF"
     echo "# Nowe ustawienia audio HQ $(date)" >> "$MPD_CONF"
-    cat "$STAGING_DIR/mpd_changes.txt" | grep -v "^#" >> "$MPD_CONF"
+    grep -v "^#" "$STAGING_DIR/mpd_changes.txt" >> "$MPD_CONF"
     echo "✅ Zmodyfikowano $MPD_CONF"
   else
     echo "⚠️  Brak pliku $MPD_CONF, tworzenie nowego..."
@@ -828,7 +1184,7 @@ audio_output {
 }
 
 EOF
-    cat "$STAGING_DIR/mpd_changes.txt" | grep -v "^#" >> "$MPD_CONF"
+    grep -v "^#" "$STAGING_DIR/mpd_changes.txt" >> "$MPD_CONF"
   fi
 
   # 4. Modyfikacja /boot/firmware/config.txt - bez nadpisywania, z backupem
@@ -838,10 +1194,9 @@ EOF
     cp "$BOOT_CFG" "$BOOT_BACKUP"
     echo "📦 Backup: $BOOT_BACKUP"
     
-    # Skomentuj stare dtoverlay audio (jeśli jeszcze nie zakomentowane)
-    sed -i 's/^dtoverlay=\(.*dac.*\)$/#DEPRECATED: dtoverlay=\1/' "$BOOT_CFG"
-    sed -i 's/^dtoverlay=\(.*audio.*\)$/#DEPRECATED: dtoverlay=\1/' "$BOOT_CFG"
-    sed -i 's/^dtparam=audio=on$/#DEPRECATED: dtparam=audio=on/' "$BOOT_CFG"
+    # Skomentuj TYLKO aktywne dtoverlay audio/DAC (unikaj podwojnego komentowania)
+    sed -i '/^dtoverlay=.*\(dac\|audio\).*/s/^/#DEPRECATED: /' "$BOOT_CFG"
+    sed -i '/^dtparam=audio=on$/s/^/#DEPRECATED: /' "$BOOT_CFG"
     
     # Sprawdź czy nasz overlay już istnieje, jeśli nie to dodaj
     if ! grep -q "^dtoverlay=${HAT_MODEL}$" "$BOOT_CFG"; then
@@ -880,12 +1235,36 @@ EOF
 
   echo "Restart usług..."
   systemctl daemon-reload
-  systemctl restart mpd pulseaudio 2>/dev/null || true
+  
+  # Włącz i uruchom usługi jeśli nie są aktywne
+  if ! systemctl is-active --quiet pulseaudio 2>/dev/null; then
+    echo "Uruchamianie PulseAudio..."
+    systemctl enable pulseaudio 2>/dev/null || true
+    systemctl start pulseaudio 2>/dev/null || true
+  else
+    echo "Restart PulseAudio..."
+    systemctl restart pulseaudio 2>/dev/null || true
+  fi
+  
+  if ! systemctl is-active --quiet mpd 2>/dev/null; then
+    echo "Uruchamianie MPD..."
+    systemctl enable mpd 2>/dev/null || true
+    systemctl start mpd 2>/dev/null || true
+  else
+    echo "Restart MPD..."
+    systemctl restart mpd 2>/dev/null || true
+  fi
+  
+  # Sprawdź status usług
+  echo ""
+  echo "Status usług:"
+  systemctl is-active pulseaudio 2>/dev/null && echo "  ✅ PulseAudio: aktywna" || echo "  ⚠️  PulseAudio: nieaktywna"
+  systemctl is-active mpd 2>/dev/null && echo "  ✅ MPD: aktywna" || echo "  ⚠️  MPD: nieaktywna"
   
   echo -e "${GREEN}✅ Konfiguracja zastosowana!${NC}"
   echo ""
   echo "⚠️  WAŻNE: Aby zmiany w config.txt (HAT) zadziałały, konieczny jest RESTART Raspberry Pi."
-  read -p "Czy chcesz teraz zrestartować system? (tak/nie): " reboot_now
+  read -r -p "Czy chcesz teraz zrestartować system? (tak/nie): " reboot_now
   if [ "$reboot_now" = "tak" ]; then
     reboot
   fi
@@ -897,7 +1276,7 @@ test_audio() {
   echo ""
   echo "1. Test ALSA (bezpośrednio do sprzętu)"
   aplay -l | grep -i dac || echo "Nie wykryto DACa przez aplay."
-  read -p "Naciśnij Enter, aby odtworzyć dźwięk testowy (sinus)..."
+  read -r -p "Naciśnij Enter, aby odtworzyć dźwięk testowy (sinus)..."
   speaker-test -t sine -f 440 -l 3 || echo "Błąd speaker-test. Czy usługa audio działa?"
   
   echo ""
@@ -909,7 +1288,7 @@ test_audio() {
      paplay --raw --rate=44100 --channels=2 --format=s16le /tmp/test.raw 2>/dev/null || echo "PA nie odpowiada."
   fi
   echo ""
-  read -p "Naciśnij Enter, aby wrócić..."
+  read -r -p "Naciśnij Enter, aby wrócić..."
 }
 
 # ==========================================
@@ -939,7 +1318,7 @@ main_menu() {
       echo "7) 🔊 Audio Test"
       echo "8) 🛑 Exit"
       echo ""
-      read -p "Select option [0-8]: " choice
+      read -r -p "Select option [0-8]: " choice
     else
       echo -e "${CYAN}MENU GŁÓWNE:${NC}"
       if [ -n "$hat_model_selected" ]; then
@@ -958,7 +1337,7 @@ main_menu() {
       echo "7) 🔊 Test Dźwięku"
       echo "8) 🛑 Wyjdź"
       echo ""
-      read -p "Wybierz opcję [0-8]: " choice
+      read -r -p "Wybierz opcję [0-8]: " choice
     fi
 
     case $choice in
@@ -970,7 +1349,7 @@ main_menu() {
           MENU_LANG="en"
           echo "Zmieniono język na angielski (English)"
         fi
-        read -p "Press Enter to continue..."
+        read -r -p "Press Enter to continue..."
         ;;
       1) install_packages ;;
       2) backup_files ;;
@@ -980,13 +1359,13 @@ main_menu() {
           echo "1) Boot Config"
           echo "2) Pulse Daemon"
           echo "3) MPD Config"
-          read -p "Select [1-3]: " sub
+          read -r -p "Select [1-3]: " sub
         else
           echo "Podgląd:"
           echo "1) Boot Config"
           echo "2) Pulse Daemon"
           echo "3) MPD Config"
-          read -p "Wybierz [1-3]: " sub
+          read -r -p "Wybierz [1-3]: " sub
         fi
         case $sub in
           1) preview_file "$BOOT_CFG" "Boot Config" ;;
@@ -1005,7 +1384,7 @@ main_menu() {
           else
             echo -e "${RED}⚠️  Najpierw wybierz model DAC (opcja 4)!${NC}"
           fi
-          read -p "Enter..."
+          read -r -p "Enter..."
         else
           gen_configs "$hat_model_selected"
           apply_configs
@@ -1025,7 +1404,7 @@ main_menu() {
           compare_files "$LATEST/$(basename "$MPD_CONF")" "$STAGING_DIR/mpd.conf"
           compare_files "$LATEST/$(basename "$BOOT_CFG")" "$STAGING_DIR/config.txt.preview"
         fi
-        read -p "Enter..."
+        read -r -p "Enter..."
         ;;
       7) test_audio ;;
       8) exit 0 ;;
