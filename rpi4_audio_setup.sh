@@ -630,8 +630,8 @@ gen_configs() {
   HAT_MODEL="$hat_model"
   echo "Używam modelu: ${HAT_MODEL}"
 
-  # 1. PulseAudio daemon.conf
-  cat > "$STAGING_DIR/daemon.conf" << EOF
+  # 1. PulseAudio daemon.conf - przygotuj listę parametrów do modyfikacji
+  cat > "$STAGING_DIR/daemon_changes.txt" << EOF
 # Optymalizacja: Max Quality (User Selected)
 # Sample Rate: ${SAMPLE_RATE} Hz | Bit Depth: ${BIT_DEPTH} bit
 # Output Format: ${OUTPUT_FORMAT} | Resample: ${RESAMPLE_METHOD}
@@ -651,85 +651,62 @@ exit-idle-time = -1
 log-level = error
 EOF
 
-  # 2. PulseAudio default.pa
-  cat > "$STAGING_DIR/default.pa" << 'EOF'
-#!/usr/bin/pulseaudio -nF
-# Core
+  # 2. PulseAudio default.pa - przygotuj listę modułów do dodania
+  cat > "$STAGING_DIR/default_pa_changes.txt" << 'EOF'
+# Moduły dodane przez skrypt audio HQ
 load-module module-native-protocol-unix
-# Udev + TSched=0 (redukuje opóźnienia i zakłócenia)
 load-module module-udev-detect tsched=0
-# Always combine / remap off dla jakości
 load-module module-combine-sink
 load-module module-intended-roles
 load-module module-always-sink
-# Exit - don't force auto_null, let PulseAudio auto-select the hardware sink
-# set-default-sink auto_null
 EOF
 
-  # 3. MPD mpd.conf
-  cat > "$STAGING_DIR/mpd.conf" << EOF
+  # 3. MPD mpd.conf - przygotuj parametry do modyfikacji
+  cat > "$STAGING_DIR/mpd_changes.txt" << EOF
 # MPD - Wysoka jakość + PulseAudio
 # Konwerter: ${MPD_CONVERTER} | Mixer: ${MIXER_TYPE}
 # Buffer: ${BUFFER_SIZE} kB | Zero Crossing: ${ZERO_CROSSING}
-music_directory "/var/lib/mpd/music"
-playlist_directory "/var/lib/mpd/playlists"
-db_file "/var/lib/mpd/tag_cache"
-log_file "/var/log/mpd/mpd.log"
-pid_file "/run/mpd/pid"
-state_file "/var/lib/mpd/state"
-user "mpd"
-group "audio"
-
-# Audio Output (PulseAudio)
-audio_output {
-    type            "pulse"
-    name            "RPi4 Hi-Res Pulse"
-    mixer_type      "${MIXER_TYPE}"
-}
-
-# Konwersja próbkowania (SOX High Quality)
 samplerate_converter "${MPD_CONVERTER}"
-
-# Buforowanie i odtwarzanie
 audio_buffer_size "${BUFFER_SIZE}"
 buffer_before_play "10%"
 gapless_mp3_playback "yes"
 replaygain "album"
 auto_update "yes"
 auto_update_depth "3"
-
-# Optymalizacje sieciowe / systemowe
 zeroconf_enabled "no"
 EOF
 
-  # 4. Boot config - zachowaj komentarze i nieużywane wpisy
+  # 4. Boot config.txt - przygotuj zmiany
   if [ -f "$BOOT_CFG" ]; then
+    cp "$BOOT_CFG" "$STAGING_DIR/config.txt.orig"
     cp "$BOOT_CFG" "$STAGING_DIR/config.txt"
     # Komentarzowanie starych dtoverlay audio (zachowując oryginalne linie)
-    # Nie usuwamy żadnych linii - tylko dezaktywujemy aktywne wpisy audio
-    sed -i 's/^\(dtoverlay=.*dac\)/#DEPRECATED: \1/' "$STAGING_DIR/config.txt"
-    sed -i 's/^\(dtoverlay=.*audio\)/#DEPRECATED: \1/' "$STAGING_DIR/config.txt"
-    sed -i 's/^\(dtparam=audio=on\)/#DEPRECATED: \1/' "$STAGING_DIR/config.txt"
-    # Uwaga: wszystkie inne linie (w tym komentarze #, //, ;) pozostają nienaruszone
+    sed -i 's/^dtoverlay=\(.*dac.*\)$/#DEPRECATED: dtoverlay=\1/' "$STAGING_DIR/config.txt"
+    sed -i 's/^dtoverlay=\(.*audio.*\)$/#DEPRECATED: dtoverlay=\1/' "$STAGING_DIR/config.txt"
+    sed -i 's/^dtparam=audio=on$/#DEPRECATED: dtparam=audio=on/' "$STAGING_DIR/config.txt"
+    
+    # Sprawdź czy już dodano nasz overlay, jeśli nie to dodaj
+    if ! grep -q "^dtoverlay=${HAT_MODEL}$" "$STAGING_DIR/config.txt"; then
+      {
+        echo ""
+        echo "# Dodane przez skrypt audio HQ $(date)"
+        echo "dtoverlay=${HAT_MODEL}"
+        echo "dtparam=audio=off"
+      } >> "$STAGING_DIR/config.txt"
+    fi
   else
-    touch "$STAGING_DIR/config.txt"
+    # Jeśli plik nie istnieje, utwórz nowy z minimalną konfiguracją
+    {
+      echo "# Raspberry Pi Boot Config"
+      echo "# Dodane przez skrypt audio HQ $(date)"
+      echo "dtoverlay=${HAT_MODEL}"
+      echo "dtparam=audio=off"
+    } > "$STAGING_DIR/config.txt"
   fi
-  
-  {
-    echo ""
-    echo "# Dodane przez skrypt audio HQ $(date)"
-    echo "dtoverlay=${HAT_MODEL}"
-    echo "dtparam=audio=off"
-  } >> "$STAGING_DIR/config.txt"
 
   echo -e "${GREEN}✅ Pliki wygenerowane w: $STAGING_DIR${NC}"
   log "Wygenerowano konfiguracje (SR: $SAMPLE_RATE, RS: $RESAMPLE_METHOD)."
 }
-
-# ==========================================
-# INSTALACJA I APLIKACJA
-# ==========================================
-
 install_packages() {
   print_header
   echo -e "${YELLOW}📦 Instalacja pakietów...${NC}"
@@ -757,7 +734,7 @@ install_packages() {
 
 apply_configs() {
   print_header
-  echo -e "${RED}⚠️  UWAGA: Ta operacja nadpisze pliki systemowe!${NC}"
+  echo -e "${RED}⚠️  UWAGA: Ta operacja zmodyfikuje pliki systemowe!${NC}"
   read -p "Czy na pewno chcesz kontynuować? (tak/nie): " confirm
   if [ "$confirm" != "tak" ]; then
     echo "Anulowano."
@@ -765,7 +742,7 @@ apply_configs() {
   fi
   
   # Sprawdź czy pliki staging istnieją
-  if [ ! -f "$STAGING_DIR/daemon.conf" ]; then
+  if [ ! -f "$STAGING_DIR/daemon_changes.txt" ]; then
     echo -e "${RED}⚠️  Najpierw wygeneruj konfigurację (Opcja 4)!${NC}"
     return 1
   fi
@@ -773,11 +750,90 @@ apply_configs() {
   echo "Zatrzymywanie usług..."
   systemctl stop mpd pulseaudio 2>/dev/null || true
 
-  echo "Kopiowanie plików..."
-  cp -f "$STAGING_DIR/daemon.conf" "$PULSE_DAEMON"
-  cp -f "$STAGING_DIR/default.pa" "$PULSE_DEFAULT"
-  cp -f "$STAGING_DIR/mpd.conf" "$MPD_CONF"
+  echo "Modyfikowanie plików konfiguracyjnych..."
+  
+  # 1. Modyfikacja /etc/pulse/daemon.conf - tylko konkretne linie
+  if [ -f "$PULSE_DAEMON" ]; then
+    cp "$PULSE_DAEMON" "$STAGING_DIR/daemon.conf.bak"
+    # Skomentuj stare linie i dodaj nowe
+    for param in "default-sample-format" "default-sample-rate" "alternate-sample-rate" \
+                 "avoid-resampling" "resample-method" "enable-lfe-remixing" \
+                 "flat-volumes" "realtime-scheduling" "rlimit-rtprio" \
+                 "exit-idle-time" "log-level"; do
+      sed -i "s/^${param}[[:space:]]*=.*/#OLD: &/" "$PULSE_DAEMON"
+    done
+    # Dodaj nowe linie na końcu pliku
+    echo "" >> "$PULSE_DAEMON"
+    echo "# Nowe ustawienia audio HQ $(date)" >> "$PULSE_DAEMON"
+    grep -v "^#" "$STAGING_DIR/daemon_changes.txt" >> "$PULSE_DAEMON"
+    echo "✅ Zmodyfikowano $PULSE_DAEMON"
+  else
+    echo "⚠️  Brak pliku $PULSE_DAEMON, tworzenie nowego..."
+    cp "$STAGING_DIR/daemon_changes.txt" "$PULSE_DAEMON"
+  fi
+
+  # 2. Modyfikacja /etc/pulse/default.pa - dodaj brakujące moduły
+  if [ -f "$PULSE_DEFAULT" ]; then
+    cp "$PULSE_DEFAULT" "$STAGING_DIR/default.pa.bak"
+    # Sprawdź które moduły już są załadowane i dodaj brakujące
+    while IFS= read -r line; do
+      # Pomiń komentarze
+      [[ "$line" =~ ^# ]] && continue
+      # Wyciągnij nazwę modułu
+      module_name=$(echo "$line" | sed 's/load-module[[:space:]]\+\([^[:space:]]*\).*/\1/')
+      # Sprawdź czy moduł nie jest już załadowany
+      if ! grep -q "^load-module[[:space:]]\+${module_name}" "$PULSE_DEFAULT"; then
+        echo "$line" >> "$PULSE_DEFAULT"
+        echo "  Dodano: $line"
+      fi
+    done < "$STAGING_DIR/default_pa_changes.txt"
+    echo "✅ Zmodyfikowano $PULSE_DEFAULT"
+  else
+    echo "⚠️  Brak pliku $PULSE_DEFAULT, tworzenie nowego..."
+    cat > "$PULSE_DEFAULT" << 'EOF'
+#!/usr/bin/pulseaudio -nF
+EOF
+    cat "$STAGING_DIR/default_pa_changes.txt" >> "$PULSE_DEFAULT"
+  fi
+
+  # 3. Modyfikacja /etc/mpd.conf - tylko konkretne parametry
+  if [ -f "$MPD_CONF" ]; then
+    cp "$MPD_CONF" "$STAGING_DIR/mpd.conf.bak"
+    # Skomentuj stare linie i dodaj nowe
+    for param in "samplerate_converter" "audio_buffer_size" "buffer_before_play" \
+                 "gapless_mp3_playback" "replaygain" "auto_update" \
+                 "auto_update_depth" "zeroconf_enabled"; do
+      sed -i "s/^${param}[[:space:]].*/#OLD: &/" "$MPD_CONF"
+    done
+    # Dodaj nowe linie na końcu pliku
+    echo "" >> "$MPD_CONF"
+    echo "# Nowe ustawienia audio HQ $(date)" >> "$MPD_CONF"
+    cat "$STAGING_DIR/mpd_changes.txt" | grep -v "^#" >> "$MPD_CONF"
+    echo "✅ Zmodyfikowano $MPD_CONF"
+  else
+    echo "⚠️  Brak pliku $MPD_CONF, tworzenie nowego..."
+    cat > "$MPD_CONF" << EOF
+music_directory "/var/lib/mpd/music"
+playlist_directory "/var/lib/mpd/playlists"
+db_file "/var/lib/mpd/tag_cache"
+log_file "/var/log/mpd/mpd.log"
+pid_file "/run/mpd/pid"
+state_file "/var/lib/mpd/state"
+user "mpd"
+group "audio"
+
+audio_output {
+    type            "pulse"
+    name            "RPi4 Hi-Res Pulse"
+}
+
+EOF
+    cat "$STAGING_DIR/mpd_changes.txt" | grep -v "^#" >> "$MPD_CONF"
+  fi
+
+  # 4. Kopiowanie config.txt (boot) - tutaj nadpisujemy bo to plik bootowy
   cp -f "$STAGING_DIR/config.txt" "$BOOT_CFG"
+  echo "✅ Zaktualizowano $BOOT_CFG"
   
   # Uprawnienia
   chown mpd:audio "$MPD_CONF" 2>/dev/null || true
@@ -795,7 +851,6 @@ apply_configs() {
     reboot
   fi
 }
-
 test_audio() {
   print_header
   echo -e "${CYAN}🔊 Test Dźwięku${NC}"
