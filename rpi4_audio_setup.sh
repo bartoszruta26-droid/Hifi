@@ -1032,35 +1032,28 @@ auto_update_depth "3"
 zeroconf_enabled "no"
 EOF
 
-  # 4. Boot config.txt - przygotuj podgląd zmian (tylko do podglądu/porównania)
+  # 4. Przygotowanie config.txt (TYLKO JEDEN overlay!)
   if [ -f "$BOOT_CFG" ]; then
     cp "$BOOT_CFG" "$STAGING_DIR/config.txt.orig"
-    # Stwórz kopię pokazującą jakie zmiany zostaną wprowadzone
     cp "$BOOT_CFG" "$STAGING_DIR/config.txt.preview"
-    sed -i 's/^dtoverlay=\(.*dac.*\)$/#DEPRECATED: dtoverlay=\1/' "$STAGING_DIR/config.txt.preview"
-    sed -i 's/^dtoverlay=\(.*audio.*\)$/#DEPRECATED: dtoverlay=\1/' "$STAGING_DIR/config.txt.preview"
-    sed -i 's/^dtparam=audio=on$/#DEPRECATED: dtparam=audio=on/' "$STAGING_DIR/config.txt.preview"
-    
-    if ! grep -q "^dtoverlay=${HAT_MODEL}$" "$STAGING_DIR/config.txt.preview"; then
-      {
-        echo ""
-        echo "# Dodane przez skrypt audio HQ $(date)"
-        echo "dtoverlay=${HAT_MODEL}"
-        echo "dtparam=audio=off"
-      } >> "$STAGING_DIR/config.txt.preview"
-    fi
-    echo "📄 Przygotowano podgląd zmian dla $BOOT_CFG"
   else
-    # Jeśli plik nie istnieje, utwórz przykładowy
-    {
-      echo "# Raspberry Pi Boot Config"
-      echo "# Dodane przez skrypt audio HQ $(date)"
-      echo "dtoverlay=${HAT_MODEL}"
-      echo "dtparam=audio=off"
-    } > "$STAGING_DIR/config.txt.preview"
-    echo "📄 Przygotowano przykładowy plik $BOOT_CFG"
+    touch "$STAGING_DIR/config.txt.preview"
   fi
 
+  # === KLUCZOWA POPRAWKA ===
+  # Usuń WSZYSTKIE stare dtoverlay audio i dtparam=audio
+  sed -i '/^dtoverlay=.*\(dac\|audio\|hifiberry\|justboom\|iqaudio\|allo\|pcm512x\)/d' "$STAGING_DIR/config.txt.preview"
+  sed -i '/^dtparam=audio=/d' "$STAGING_DIR/config.txt.preview"
+
+  # Dodaj tylko jeden, czysty overlay na końcu sekcji [all] lub na dole
+  {
+    echo ""
+    echo "# === Audio HAT - dodane przez skrypt $(date '+%Y-%m-%d %H:%M') ==="
+    echo "dtoverlay=${HAT_MODEL}"
+    echo "dtparam=audio=off"
+  } >> "$STAGING_DIR/config.txt.preview"
+
+  echo -e "${GREEN}✅ Przygotowano config.txt z tylko jednym dtoverlay=${HAT_MODEL}${NC}"
   echo -e "${GREEN}✅ Pliki wygenerowane w: $STAGING_DIR${NC}"
   log "Wygenerowano konfiguracje (SR: $SAMPLE_RATE, RS: $RESAMPLE_METHOD)."
 }
@@ -1187,47 +1180,30 @@ EOF
     grep -v "^#" "$STAGING_DIR/mpd_changes.txt" >> "$MPD_CONF"
   fi
 
-  # 4. Modyfikacja /boot/firmware/config.txt - bez nadpisywania, z backupem
+  # === POPRAWIONA SEKCJA config.txt ===
+  echo -e "${YELLOW}Aktualizacja $BOOT_CFG${NC}"
+  
   if [ -f "$BOOT_CFG" ]; then
-    # Twórz backup z timestampem
     BOOT_BACKUP="$BACKUP_BASE/config.txt.$(date +%Y%m%d_%H%M%S).bak"
     cp "$BOOT_CFG" "$BOOT_BACKUP"
-    echo "📦 Backup: $BOOT_BACKUP"
-    
-    # Skomentuj TYLKO aktywne dtoverlay audio/DAC (unikaj podwojnego komentowania)
-    sed -i '/^dtoverlay=.*\(dac\|audio\).*/s/^/#DEPRECATED: /' "$BOOT_CFG"
-    sed -i '/^dtparam=audio=on$/s/^/#DEPRECATED: /' "$BOOT_CFG"
-    
-    # Sprawdź czy nasz overlay już istnieje, jeśli nie to dodaj
-    if ! grep -q "^dtoverlay=${HAT_MODEL}$" "$BOOT_CFG"; then
-      {
-        echo ""
-        echo "# Dodane przez skrypt audio HQ $(date)"
-        echo "dtoverlay=${HAT_MODEL}"
-        echo "dtparam=audio=off"
-      } >> "$BOOT_CFG"
-      echo "  Dodano dtoverlay=${HAT_MODEL}"
-    else
-      echo "  dtoverlay=${HAT_MODEL} już istnieje"
-    fi
-    
-    # Upewnij się że dtparam=audio=off jest ustawione
-    if ! grep -q "^dtparam=audio=off$" "$BOOT_CFG"; then
-      echo "dtparam=audio=off" >> "$BOOT_CFG"
-      echo "  Dodano dtparam=audio=off"
-    fi
-    
-    echo "✅ Zmodyfikowano $BOOT_CFG"
-  else
-    echo "⚠️  Brak pliku $BOOT_CFG, tworzenie nowego..."
-    {
-      echo "# Raspberry Pi Boot Config"
-      echo "# Utworzony przez skrypt audio HQ $(date)"
-      echo "dtoverlay=${HAT_MODEL}"
-      echo "dtparam=audio=off"
-    } > "$BOOT_CFG"
-    echo "✅ Utworzono $BOOT_CFG"
+    echo "Backup utworzony: $BOOT_BACKUP"
   fi
+
+  # Najbezpieczniejsza metoda: zastąp całą sekcję audio
+  # Usuń stare linie audio
+  sed -i '/^dtoverlay=.*\(dac\|audio\|hifiberry\|justboom\|iqaudio\|allo\|pcm512x\)/d' "$BOOT_CFG"
+  sed -i '/^dtparam=audio=/d' "$BOOT_CFG"
+
+  # Dodaj czysty wpis
+  {
+    echo ""
+    echo "# === Audio HAT - dodane przez skrypt $(date '+%Y-%m-%d %H:%M') ==="
+    echo "dtoverlay=${HAT_MODEL}"
+    echo "dtparam=audio=off"
+  } >> "$BOOT_CFG"
+
+  echo -e "${GREEN}✅ Zapisano dtoverlay=${HAT_MODEL} (tylko jeden)${NC}"
+  log "Zastosowano dtoverlay=${HAT_MODEL}"
   
   # Uprawnienia
   chown mpd:audio "$MPD_CONF" 2>/dev/null || true
@@ -1262,6 +1238,8 @@ EOF
   systemctl is-active mpd 2>/dev/null && echo "  ✅ MPD: aktywna" || echo "  ⚠️  MPD: nieaktywna"
   
   echo -e "${GREEN}✅ Konfiguracja zastosowana!${NC}"
+  echo ""
+  echo -e "${YELLOW}Wykonaj reboot: sudo reboot${NC}"
   echo ""
   echo "⚠️  WAŻNE: Aby zmiany w config.txt (HAT) zadziałały, konieczny jest RESTART Raspberry Pi."
   read -r -p "Czy chcesz teraz zrestartować system? (tak/nie): " reboot_now
