@@ -30,13 +30,13 @@ RESAMPLE_METHOD="soxr-vhq"
 MPD_CONVERTER="soxr"
 MIXER_TYPE="hardware"
 VOLUME_CURVE="logarithmic"
-DITHER_ENABLED="yes"
+DITHER_ENABLED="no"
 BUFFER_SIZE="40960"
 CLOCK_SOURCE="internal"
 OUTPUT_FORMAT="float64le"
-ZERO_CROSSING="yes"
-SOFT_CLIP="yes"
-HAT_MODEL="justboom-dac"
+ZERO_CROSSING="no"
+SOFT_CLIP="no"
+HAT_MODEL="hifiberry-dacplus"
 # Dodatkowe parametry wysokiej jakości
 CLOCK_MODE="master"
 OUTPUT_DELAY="0"
@@ -185,7 +185,7 @@ get_dac_capabilities() {
 # ==========================================
 
 configure_quality() {
-  local hat_model="${1:-justboom-dac}"
+  local hat_model="${1:-hifiberry-dacplus}"
   
   # Pobierz możliwości DAC
   local dac_caps
@@ -338,11 +338,11 @@ configure_quality() {
     echo "1) Enabled (Recommended when converting 24/32 -> lower)"
     echo "2) Disabled (Clean signal, possible artifacts)"
     echo ""
-    read -r -p "Your choice [1-2] (default 1): " dither_choice
+    read -r -p "Your choice [1-2] (default 2): " dither_choice
     case $dither_choice in
       1) DITHER_ENABLED="yes" ;;
       2) DITHER_ENABLED="no" ;;
-      *) DITHER_ENABLED="yes" ;;
+      *) DITHER_ENABLED="no" ;;
     esac
     echo "Set Dither: ${DITHER_ENABLED}"
     echo ""
@@ -386,11 +386,11 @@ configure_quality() {
     echo "1) Enabled (Avoids clicks when changing volume)"
     echo "2) Disabled (Immediate volume change)"
     echo ""
-    read -r -p "Your choice [1-2] (default 1): " zc_choice
+    read -r -p "Your choice [1-2] (default 2): " zc_choice
     case $zc_choice in
       1) ZERO_CROSSING="yes" ;;
       2) ZERO_CROSSING="no" ;;
-      *) ZERO_CROSSING="yes" ;;
+      *) ZERO_CROSSING="no" ;;
     esac
     echo "Set Zero Crossing: ${ZERO_CROSSING}"
     echo ""
@@ -675,11 +675,11 @@ configure_quality() {
     echo "1) Włączony (Zalecane przy konwersji 24/32 -> niższe)"
     echo "2) Wyłączony (Czysty sygnał, możliwe artefakty)"
     echo ""
-    read -r -p "Twój wybór [1-2] (domyślnie 1): " dither_choice
+    read -r -p "Twój wybór [1-2] (domyślnie 2): " dither_choice
     case $dither_choice in
       1) DITHER_ENABLED="yes" ;;
       2) DITHER_ENABLED="no" ;;
-      *) DITHER_ENABLED="yes" ;;
+      *) DITHER_ENABLED="no" ;;
     esac
     echo "Ustawiono Dither: ${DITHER_ENABLED}"
     echo ""
@@ -723,11 +723,11 @@ configure_quality() {
     echo "1) Włączony (Unika kliknięć przy zmianie głośności)"
     echo "2) Wyłączony (Natychmiastowa zmiana głośności)"
     echo ""
-    read -r -p "Twój wybór [1-2] (domyślnie 1): " zc_choice
+    read -r -p "Twój wybór [1-2] (domyślnie 2): " zc_choice
     case $zc_choice in
       1) ZERO_CROSSING="yes" ;;
       2) ZERO_CROSSING="no" ;;
-      *) ZERO_CROSSING="yes" ;;
+      *) ZERO_CROSSING="no" ;;
     esac
     echo "Ustawiono Zero Crossing: ${ZERO_CROSSING}"
     echo ""
@@ -933,7 +933,7 @@ select_model() {
   fi
   
   case $hat_choice in
-    1) HAT_MODEL="justboom-dac" ;; # Często działa z R38
+    1) HAT_MODEL="hifiberry-dacplus" ;; # Domyślny dla R38 / Generic I2S DAC
     2) HAT_MODEL="hifiberry-dacplus" ;;
     3) HAT_MODEL="hifiberry-dacplushd" ;;
     4) HAT_MODEL="justboom-dac" ;;
@@ -949,9 +949,9 @@ select_model() {
       else
         read -r -p "Wpisz nazwę dtoverlay (np. hifiberry-dac): " CUSTOM_HAT
       fi
-      HAT_MODEL="${CUSTOM_HAT:-justboom-dac}"
+      HAT_MODEL="${CUSTOM_HAT:-hifiberry-dacplus}"
       ;;
-    *) HAT_MODEL="justboom-dac" ;;
+    *) HAT_MODEL="hifiberry-dacplus" ;;
   esac
   
   if [ "$MENU_LANG" = "en" ]; then
@@ -979,7 +979,7 @@ gen_configs() {
   echo -e "${YELLOW}⏳ Generowanie plików konfiguracyjnych...${NC}"
   
   # Użyj wybranego modelu lub wybierz go jeśli nie podano
-  if [ -z "$hat_model" ] || [ "$hat_model" = "justboom-dac" ]; then
+  if [ -z "$hat_model" ] || [ "$hat_model" = "hifiberry-dacplus" ]; then
     select_model hat_model
   fi
   
