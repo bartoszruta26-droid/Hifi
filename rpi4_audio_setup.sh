@@ -26,8 +26,8 @@ LOG_FILE="$HOME/.rpi_audio_script.log"
 # Domyślne wartości najwyższej jakości audio
 SAMPLE_RATE="768000"
 BIT_DEPTH="32"
-RESAMPLE_METHOD="soxr highest"
-MPD_CONVERTER="soxr highest"
+RESAMPLE_METHOD="soxr very high"
+MPD_CONVERTER="soxr very high"
 MIXER_TYPE="hardware"
 VOLUME_CURVE="logarithmic"
 DITHER_ENABLED="yes"
@@ -416,7 +416,7 @@ configure_quality() {
     echo "3) speex-float-10 (Very good quality)"
     echo "4) soxr (Highest quality, more CPU)"
     echo "5) soxr very high (Studio quality)"
-    echo "6) soxr highest (Maximum fidelity)"
+    echo "6) soxr very high (Maximum fidelity)"
     echo ""
     read -r -p "Your choice [1-6] (default 6): " rs_choice
     case $rs_choice in
@@ -425,8 +425,8 @@ configure_quality() {
       3) RESAMPLE_METHOD="speex-float-10" ;;
       4) RESAMPLE_METHOD="soxr" ;;
       5) RESAMPLE_METHOD="soxr very high" ;;
-      6) RESAMPLE_METHOD="soxr highest" ;;
-      *) RESAMPLE_METHOD="soxr highest" ;;
+      6) RESAMPLE_METHOD="soxr very high" ;;
+      *) RESAMPLE_METHOD="soxr very high" ;;
     esac
     echo "Set Resample Method: ${RESAMPLE_METHOD}"
     echo ""
@@ -753,7 +753,7 @@ configure_quality() {
     echo "3) speex-float-10 (Bardzo dobra jakość)"
     echo "4) soxr (Najwyższa jakość, większe CPU)"
     echo "5) soxr very high (Jakość studyjna)"
-    echo "6) soxr highest (Maksymalna wierność)"
+    echo "6) soxr very high (Maksymalna wierność)"
     echo ""
     read -r -p "Twój wybór [1-6] (domyślnie 6): " rs_choice
     case $rs_choice in
@@ -762,8 +762,8 @@ configure_quality() {
       3) RESAMPLE_METHOD="speex-float-10" ;;
       4) RESAMPLE_METHOD="soxr" ;;
       5) RESAMPLE_METHOD="soxr very high" ;;
-      6) RESAMPLE_METHOD="soxr highest" ;;
-      *) RESAMPLE_METHOD="soxr highest" ;;
+      6) RESAMPLE_METHOD="soxr very high" ;;
+      *) RESAMPLE_METHOD="soxr very high" ;;
     esac
     echo "Ustawiono Resample Method: ${RESAMPLE_METHOD}"
     echo ""
@@ -873,7 +873,7 @@ configure_quality() {
   
   # Automatyczne dopasowanie MPD
   if [[ "$RESAMPLE_METHOD" == soxr* ]]; then
-    MPD_CONVERTER="soxr highest"
+    MPD_CONVERTER="soxr very high"
   else
     MPD_CONVERTER="soxr very high"
   fi
@@ -1024,8 +1024,6 @@ EOF
 # Buffer: ${BUFFER_SIZE} kB | Zero Crossing: ${ZERO_CROSSING}
 samplerate_converter "${MPD_CONVERTER}"
 audio_buffer_size "${BUFFER_SIZE}"
-buffer_before_play "10%"
-gapless_mp3_playback "yes"
 replaygain "album"
 auto_update "yes"
 auto_update_depth "3"
@@ -1148,9 +1146,8 @@ EOF
   if [ -f "$MPD_CONF" ]; then
     cp "$MPD_CONF" "$STAGING_DIR/mpd.conf.bak"
     # Skomentuj stare linie i dodaj nowe
-    for param in "samplerate_converter" "audio_buffer_size" "buffer_before_play" \
-                 "gapless_mp3_playback" "replaygain" "auto_update" \
-                 "auto_update_depth" "zeroconf_enabled"; do
+    for param in "samplerate_converter" "audio_buffer_size" "replaygain" \
+                 "auto_update" "auto_update_depth" "zeroconf_enabled"; do
       sed -i "s/^${param}[[:space:]].*/#OLD: &/" "$MPD_CONF"
     done
     # Dodaj nowe linie na końcu pliku
