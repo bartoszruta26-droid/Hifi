@@ -26,8 +26,8 @@ LOG_FILE="$HOME/.rpi_audio_script.log"
 # Domyślne wartości najwyższej jakości audio
 SAMPLE_RATE="768000"
 BIT_DEPTH="32"
-RESAMPLE_METHOD="soxr very high"
-MPD_CONVERTER="soxr very high"
+RESAMPLE_METHOD="soxr-vhq"
+MPD_CONVERTER="soxr"
 MIXER_TYPE="hardware"
 VOLUME_CURVE="logarithmic"
 DITHER_ENABLED="yes"
@@ -414,9 +414,9 @@ configure_quality() {
     echo "1) speex-float-1 (Fast, low quality)"
     echo "2) speex-float-5 (Good quality, balanced)"
     echo "3) speex-float-10 (Very good quality)"
-    echo "4) soxr (Highest quality, more CPU)"
-    echo "5) soxr very high (Studio quality)"
-    echo "6) soxr very high (Maximum fidelity)"
+    echo "4) soxr (High quality)"
+    echo "5) soxr-lq (Low quality, less CPU)"
+    echo "6) soxr-vhq (Very high quality - Recommended)"
     echo ""
     read -r -p "Your choice [1-6] (default 6): " rs_choice
     case $rs_choice in
@@ -424,9 +424,9 @@ configure_quality() {
       2) RESAMPLE_METHOD="speex-float-5" ;;
       3) RESAMPLE_METHOD="speex-float-10" ;;
       4) RESAMPLE_METHOD="soxr" ;;
-      5) RESAMPLE_METHOD="soxr very high" ;;
-      6) RESAMPLE_METHOD="soxr very high" ;;
-      *) RESAMPLE_METHOD="soxr very high" ;;
+      5) RESAMPLE_METHOD="soxr-lq" ;;
+      6) RESAMPLE_METHOD="soxr-vhq" ;;
+      *) RESAMPLE_METHOD="soxr-vhq" ;;
     esac
     echo "Set Resample Method: ${RESAMPLE_METHOD}"
     echo ""
@@ -751,9 +751,9 @@ configure_quality() {
     echo "1) speex-float-1 (Szybka, niska jakość)"
     echo "2) speex-float-5 (Dobra jakość, zbalansowana)"
     echo "3) speex-float-10 (Bardzo dobra jakość)"
-    echo "4) soxr (Najwyższa jakość, większe CPU)"
-    echo "5) soxr very high (Jakość studyjna)"
-    echo "6) soxr very high (Maksymalna wierność)"
+    echo "4) soxr (Wysoka jakość)"
+    echo "5) soxr-lq (Niska jakość, mniejsze CPU)"
+    echo "6) soxr-vhq (Bardzo wysoka jakość - Zalecane)"
     echo ""
     read -r -p "Twój wybór [1-6] (domyślnie 6): " rs_choice
     case $rs_choice in
@@ -761,9 +761,9 @@ configure_quality() {
       2) RESAMPLE_METHOD="speex-float-5" ;;
       3) RESAMPLE_METHOD="speex-float-10" ;;
       4) RESAMPLE_METHOD="soxr" ;;
-      5) RESAMPLE_METHOD="soxr very high" ;;
-      6) RESAMPLE_METHOD="soxr very high" ;;
-      *) RESAMPLE_METHOD="soxr very high" ;;
+      5) RESAMPLE_METHOD="soxr-lq" ;;
+      6) RESAMPLE_METHOD="soxr-vhq" ;;
+      *) RESAMPLE_METHOD="soxr-vhq" ;;
     esac
     echo "Ustawiono Resample Method: ${RESAMPLE_METHOD}"
     echo ""
@@ -873,9 +873,9 @@ configure_quality() {
   
   # Automatyczne dopasowanie MPD
   if [[ "$RESAMPLE_METHOD" == soxr* ]]; then
-    MPD_CONVERTER="soxr very high"
+    MPD_CONVERTER="soxr"
   else
-    MPD_CONVERTER="soxr very high"
+    MPD_CONVERTER="soxr"
   fi
   
   if [ "$MENU_LANG" = "en" ]; then
@@ -1165,7 +1165,7 @@ log_file "/var/log/mpd/mpd.log"
 pid_file "/run/mpd/pid"
 state_file "/var/lib/mpd/state"
 user "mpd"
-group "audio"
+group "mpd"
 
 audio_output {
     type            "pulse"
