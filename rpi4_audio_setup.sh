@@ -1187,22 +1187,32 @@ EOF
     BOOT_BACKUP="$BACKUP_BASE/config.txt.$(date +%Y%m%d_%H%M%S).bak"
     cp "$BOOT_CFG" "$BOOT_BACKUP"
     echo "Backup utworzony: $BOOT_BACKUP"
+
+    # Najbezpieczniejsza metoda: zastąp całą sekcję audio
+    # Usuń stare linie audio (tylko jeśli plik istnieje)
+    sed -i '/^dtoverlay=.*\(dac\|audio\|hifiberry\|justboom\|iqaudio\|allo\|pcm512x\)/d' "$BOOT_CFG"
+    sed -i '/^dtparam=audio=/d' "$BOOT_CFG"
+
+    # Dodaj czysty wpis
+    {
+      echo ""
+      echo "# === Audio HAT - dodane przez skrypt $(date '+%Y-%m-%d %H:%M') ==="
+      echo "dtoverlay=${HAT_MODEL}"
+      echo "dtparam=audio=off"
+    } >> "$BOOT_CFG"
+
+    echo -e "${GREEN}✅ Zapisano dtoverlay=${HAT_MODEL} (tylko jeden)${NC}"
+  else
+    # Plik nie istnieje - utwórz nowy z samym overlayem
+    echo -e "${YELLOW}⚠️  $BOOT_CFG nie istnieje, tworzenie nowego pliku${NC}"
+    {
+      echo "# === Audio HAT - dodane przez skrypt $(date '+%Y-%m-%d %H:%M') ==="
+      echo "dtoverlay=${HAT_MODEL}"
+      echo "dtparam=audio=off"
+    } > "$BOOT_CFG"
+    echo -e "${GREEN}✅ Utworzono $BOOT_CFG z dtoverlay=${HAT_MODEL}${NC}"
   fi
-
-  # Najbezpieczniejsza metoda: zastąp całą sekcję audio
-  # Usuń stare linie audio
-  sed -i '/^dtoverlay=.*\(dac\|audio\|hifiberry\|justboom\|iqaudio\|allo\|pcm512x\)/d' "$BOOT_CFG"
-  sed -i '/^dtparam=audio=/d' "$BOOT_CFG"
-
-  # Dodaj czysty wpis
-  {
-    echo ""
-    echo "# === Audio HAT - dodane przez skrypt $(date '+%Y-%m-%d %H:%M') ==="
-    echo "dtoverlay=${HAT_MODEL}"
-    echo "dtparam=audio=off"
-  } >> "$BOOT_CFG"
-
-  echo -e "${GREEN}✅ Zapisano dtoverlay=${HAT_MODEL} (tylko jeden)${NC}"
+  
   log "Zastosowano dtoverlay=${HAT_MODEL}"
   
   # Uprawnienia
