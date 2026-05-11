@@ -405,10 +405,10 @@ main_menu() {
             0)
                 if [[ "$MENU_LANG" == "en" ]]; then
                     MENU_LANG="pl"
-                    echo "Language changed to Polish (Polski)"
+                    echo "Zmieniono język na polski (Polish)"
                 else
                     MENU_LANG="en"
-                    echo "Zmieniono język na angielski (English)"
+                    echo "Language changed to English"
                 fi
                 read -r -p "Press Enter to continue..."
                 ;;
@@ -416,7 +416,8 @@ main_menu() {
             2) backup_files ;;
             3) preview_system_files ;;
             4) 
-                HAT_MODEL_SELECTED=$(select_model)
+                select_model
+                HAT_MODEL_SELECTED="$HAT_MODEL"
                 configure_quality "$HAT_MODEL_SELECTED"
                 ;;
             5)

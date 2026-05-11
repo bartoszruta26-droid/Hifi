@@ -45,7 +45,7 @@ readonly DEFAULT_CHANNEL_MODE="stereo"
 readonly DEFAULT_MENU_LANG="pl"
 
 # Kolory ANSI (z fallback dla terminali bez kolorów)
-declare -gR COLORS=(
+declare -gA COLORS=(
     [RED]=$(tput setaf 1 2>/dev/null || echo '\033[0;31m')
     [GREEN]=$(tput setaf 2 2>/dev/null || echo '\033[0;32m')
     [YELLOW]=$(tput setaf 3 2>/dev/null || echo '\033[1;33m')
@@ -56,7 +56,7 @@ declare -gR COLORS=(
 
 # Baza danych możliwości DAC HAT
 # Format: MAX_SAMPLE_RATE:MAX_BIT_DEPTH:SUPPORTED_RATES
-declare -gR DAC_CAPABILITIES=(
+declare -gA DAC_CAPABILITIES=(
     ["justboom-dac"]="384000:32:44100,48000,88200,96000,176400,192000,352800,384000"
     ["hifiberry-dac"]="384000:32:44100,48000,88200,96000,176400,192000,352800,384000"
     ["hifiberry-dacplus"]="384000:32:44100,48000,88200,96000,176400,192000,352800,384000"
@@ -75,7 +75,7 @@ readonly DEFAULT_MAX_BIT="32"
 readonly DEFAULT_RATES="44100,48000,88200,96000,176400,192000,352800,384000"
 
 # Lista poprawnych overlayów (whitelist bezpieczeństwa)
-declare -gR VALID_OVERLAYS=(
+declare -ga VALID_OVERLAYS=(
     "justboom-dac"
     "hifiberry-dac"
     "hifiberry-dacplus"
