@@ -285,6 +285,8 @@ dtparam=audio=off
 |----------|------------------|--------------|------------|
 | `dtoverlay` | brak | `hifiberry-dac` (lub inny) | Aktywacja DAC HAT |
 | `dtparam=audio` | `on` | `off` | Wyłączenie onboard audio |
+| `dtparam=i2s` | `off` | `on` | Włączenie interfejsu I2S dla DAC |
+| `dtparam=i2c` | `off` | `on` | Włączenie interfejsu I2C dla komunikacji z DAC |
 
 ---
 
