@@ -17,7 +17,9 @@ source "$SCRIPT_DIR/lib/config_generator.sh"
 source "$SCRIPT_DIR/lib/applier.sh"
 source "$SCRIPT_DIR/lib/ui.sh"
 
-# Dodatkowe funkcje pomocnicze dla głównego skryptu
+# ==========================================
+# DODATKOWE FUNKCJE POMOCNICZE
+# ==========================================
 
 # Instalacja pakietów
 install_packages() {
@@ -52,6 +54,9 @@ install_packages() {
             echo -e "${COLORS[GREEN]}✅ PipeWire-Pulse wyłączony${COLORS[NC]}"
         fi
     fi
+    
+    echo ""
+    read -r -p "Naciśnij Enter, aby kontynuować..."
 }
 
 # Test audio

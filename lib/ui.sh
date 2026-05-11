@@ -9,6 +9,7 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/core.sh"
+source "$SCRIPT_DIR/backup.sh"
 source "$SCRIPT_DIR/config_generator.sh"
 
 # Zmienne sesji
@@ -411,6 +412,9 @@ main_menu() {
                 fi
                 read -r -p "Press Enter to continue..."
                 ;;
+            1) install_packages ;;
+            2) backup_files ;;
+            3) preview_system_files ;;
             4) 
                 HAT_MODEL_SELECTED=$(select_model)
                 configure_quality "$HAT_MODEL_SELECTED"
@@ -428,12 +432,24 @@ main_menu() {
                     read -r -p "Press Enter to continue..."
                 fi
                 ;;
-            10) exit 0 ;;
-            *) 
+            6) apply_configs ;;
+            7) compare_backups ;;
+            8) test_audio ;;
+            9) restore_backup_menu ;;
+            10)
                 if [[ "$MENU_LANG" == "en" ]]; then
-                    echo "Option not yet implemented in modular version."
+                    echo -e "${COLORS[GREEN]}✅ Exiting. Goodbye!${COLORS[NC]}"
                 else
-                    echo "Opcja jeszcze nie zaimplementowana w wersji modularnej."
+                    echo -e "${COLORS[GREEN]}✅ Wyjście. Do widzenia!${COLORS[NC]}"
+                fi
+                exit 0
+                ;;
+            11) cleanup_backups_menu ;;
+            *)
+                if [[ "$MENU_LANG" == "en" ]]; then
+                    echo "Invalid choice."
+                else
+                    echo "Nieprawidłowy wybór."
                 fi
                 read -r -p "Press Enter to continue..."
                 ;;
