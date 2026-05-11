@@ -255,6 +255,39 @@ dtparam=audio=off
 
 ---
 
+## 🔑 Key Configuration Changes
+
+### PulseAudio (`/etc/pulse/daemon.conf`)
+
+| Parameter | Default Value | New Value (Hi-Res) | Purpose |
+|-----------|---------------|-------------------|----------|
+| `default-sample-format` | `s16le` | `float64le` | Maximum processing precision |
+| `default-sample-rate` | `44100` or `48000` | `768000` (or selected) | Hi-Res Audio support |
+| `resample-method` | `speex-float-1` | `soxr-vhq` | Highest quality resampling |
+| `flat-volumes` | `yes` | `no` | Better volume control |
+| `realtime-scheduling` | `no` | `yes` | Real-time priority |
+| `exit-idle-time` | `30` | `-1` | No idle exit (continuous ready) |
+
+### MPD (`/etc/mpd.conf`)
+
+| Parameter | Default Value | New Value (Hi-Res) | Purpose |
+|-----------|---------------|-------------------|----------|
+| `audio_output.type` | `alsa` or `pulse` | `pulse` | PulseAudio integration |
+| `mixer_type` | `software` | `hardware` | Direct hardware control |
+| `samplerate_converter` | none or `libsamplerate` | `soxr` | Highest quality conversion |
+| `audio_buffer_size` | `8192` | `40960` | Larger buffer = fewer interruptions |
+| `replaygain` | `off` | `album` | Album loudness normalization |
+| `zeroconf_enabled` | `yes` | `no` | Disable auto-discovery (security) |
+
+### Boot Config (`/boot/firmware/config.txt`)
+
+| Parameter | Default Value | New Value | Purpose |
+|-----------|---------------|-----------|----------|
+| `dtoverlay` | none | `hifiberry-dac` (or other) | DAC HAT activation |
+| `dtparam=audio` | `on` | `off` | Disable onboard audio |
+
+---
+
 ## 📄 License
 
 Script released under MIT license. You can modify and distribute.

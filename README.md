@@ -255,6 +255,39 @@ dtparam=audio=off
 
 ---
 
+## 🔑 Najważniejsze Zmiany w Konfiguracji
+
+### PulseAudio (`/etc/pulse/daemon.conf`)
+
+| Parametr | Wartość Domyślna | Nowa Wartość (Hi-Res) | Cel Zmiany |
+|----------|------------------|----------------------|------------|
+| `default-sample-format` | `s16le` | `float64le` | Maksymalna precyzja przetwarzania |
+| `default-sample-rate` | `44100` lub `48000` | `768000` (lub inna wybrana) | Obsługa Hi-Res Audio |
+| `resample-method` | `speex-float-1` | `soxr-vhq` | Najwyższa jakość resamplingu |
+| `flat-volumes` | `yes` | `no` | Lepsza kontrola głośności |
+| `realtime-scheduling` | `no` | `yes` | Priorytet czasu rzeczywistego |
+| `exit-idle-time` | `30` | `-1` | Bez wyłączania (ciągła gotowość) |
+
+### MPD (`/etc/mpd.conf`)
+
+| Parametr | Wartość Domyślna | Nowa Wartość (Hi-Res) | Cel Zmiany |
+|----------|------------------|----------------------|------------|
+| `audio_output.type` | `alsa` lub `pulse` | `pulse` | Integracja z PulseAudio |
+| `mixer_type` | `software` | `hardware` | Bezpośrednia kontrola sprzętowa |
+| `samplerate_converter` | brak lub `libsamplerate` | `soxr` | Najwyższa jakość konwersji |
+| `audio_buffer_size` | `8192` | `40960` | Większy bufor = mniej przerwań |
+| `replaygain` | `off` | `album` | Normalizacja głośności albumów |
+| `zeroconf_enabled` | `yes` | `no` | Wyłączenie auto-discovery (bezpieczeństwo) |
+
+### Boot Config (`/boot/firmware/config.txt`)
+
+| Parametr | Wartość Domyślna | Nowa Wartość | Cel Zmiany |
+|----------|------------------|--------------|------------|
+| `dtoverlay` | brak | `hifiberry-dac` (lub inny) | Aktywacja DAC HAT |
+| `dtparam=audio` | `on` | `off` | Wyłączenie onboard audio |
+
+---
+
 ## 📄 Licencja
 
 Skrypt udostępniony na licencji MIT. Możesz modyfikować i rozpowszechniać.

@@ -1,1 +1,3 @@
-Nothing should be ignored since only a shell script file (`rpi4_audio_setup_v3.sh`) was modified and no build artifacts, dependencies, or temporary files were detected in the changes.
+```gitignore
+
+```
