@@ -132,7 +132,7 @@ Skrypt zawiera predefiniowane profile dla:
 
 | Nr | Model DAC | Overlay | Maks. Sample Rate | Maks. Bit Depth |
 |----|-----------|---------|-------------------|-----------------|
-| 1-2 | R38 / Generic I2S DAC | `hifiberry-dacplus` | 384 kHz | 32 bit |
+| 1-2 | R38 / Generic I2S DAC | `hifiberry-dac` | 384 kHz | 32 bit |
 | 3 | HiFiBerry DAC+ HD | `hifiberry-dacplushd` | 768 kHz | 32 bit |
 | 4 | JustBoom DAC HAT | `justboom-dac` | 384 kHz | 32 bit |
 | 5 | IQaudio DAC Pro / DAC+ | `iqaudio-dacplus` | 384 kHz | 32 bit |
@@ -143,7 +143,7 @@ Skrypt zawiera predefiniowane profile dla:
 | 10 | AudioInjector (WM8731) | `audioinjector-wm8731-audio` | 96 kHz | 24 bit |
 | 11 | Inny / Własny | ręczne wpisanie | zależne od modelu | zależne od modelu |
 
-> **Uwaga**: Dla R38 i podobnych HAT-ów domyślnie używany jest overlay **`hifiberry-dacplus`** jako główny/generic DAC.
+> **Uwaga**: Dla R38 i podobnych HAT-ów domyślnie używany jest overlay **`hifiberry-dac`** jako główny/generic DAC.
 
 ---
 
@@ -234,7 +234,7 @@ zeroconf_enabled "no"
 **`/boot/firmware/config.txt`**:
 ```txt
 # === Audio HAT Configuration ===
-dtoverlay=hifiberry-dacplus
+dtoverlay=hifiberry-dac
 dtparam=audio=off
 ```
 
