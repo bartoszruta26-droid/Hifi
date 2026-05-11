@@ -9,6 +9,7 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/core.sh"
+source "$SCRIPT_DIR/backup.sh"
 source "$SCRIPT_DIR/config_generator.sh"
 
 # Zmienne sesji
@@ -435,9 +436,16 @@ main_menu() {
             7) compare_backups ;;
             8) test_audio ;;
             9) restore_backup_menu ;;
-            10) cleanup_backups_menu ;;
-            11) exit 0 ;;
-            *) 
+            10)
+                if [[ "$MENU_LANG" == "en" ]]; then
+                    echo -e "${COLORS[GREEN]}✅ Exiting. Goodbye!${COLORS[NC]}"
+                else
+                    echo -e "${COLORS[GREEN]}✅ Wyjście. Do widzenia!${COLORS[NC]}"
+                fi
+                exit 0
+                ;;
+            11) cleanup_backups_menu ;;
+            *)
                 if [[ "$MENU_LANG" == "en" ]]; then
                     echo "Invalid choice."
                 else
@@ -451,5 +459,4 @@ main_menu() {
 
 # Eksport funkcji
 export -f print_header select_model configure_quality main_menu
-export -f install_packages test_audio preview_system_files compare_backups restore_backup_menu cleanup_backups_menu
 export MENU_LANG HAT_MODEL_SELECTED

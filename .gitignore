@@ -1,1 +1,1 @@
-Nothing needs to be added to .gitignore since the changes only include shell script files (.sh) which are source code files and not build artifacts, dependencies, or temporary files.
+Nothing should be ignored based on the provided file changes, as they are all shell script source files (.sh) which are legitimate source code files that should be tracked in version control.
