@@ -33,7 +33,7 @@ readonly DEFAULT_CLOCK_SOURCE="internal"
 readonly DEFAULT_OUTPUT_FORMAT="float64le"
 readonly DEFAULT_ZERO_CROSSING="no"
 readonly DEFAULT_SOFT_CLIP="no"
-readonly DEFAULT_HAT_MODEL="hifiberry-dacplus"
+readonly DEFAULT_HAT_MODEL="hifiberry-dac"
 readonly DEFAULT_CLOCK_MODE="master"
 readonly DEFAULT_OUTPUT_DELAY="0"
 readonly DEFAULT_AUTO_MUTE="no"
@@ -58,6 +58,7 @@ declare -gR COLORS=(
 # Format: MAX_SAMPLE_RATE:MAX_BIT_DEPTH:SUPPORTED_RATES
 declare -gR DAC_CAPABILITIES=(
     ["justboom-dac"]="384000:32:44100,48000,88200,96000,176400,192000,352800,384000"
+    ["hifiberry-dac"]="384000:32:44100,48000,88200,96000,176400,192000,352800,384000"
     ["hifiberry-dacplus"]="384000:32:44100,48000,88200,96000,176400,192000,352800,384000"
     ["hifiberry-dacplushd"]="768000:32:44100,48000,88200,96000,176400,192000,352800,384000,705600,768000"
     ["iqaudio-dacplus"]="384000:32:44100,48000,88200,96000,176400,192000,352800,384000"
@@ -76,6 +77,7 @@ readonly DEFAULT_RATES="44100,48000,88200,96000,176400,192000,352800,384000"
 # Lista poprawnych overlayów (whitelist bezpieczeństwa)
 declare -gR VALID_OVERLAYS=(
     "justboom-dac"
+    "hifiberry-dac"
     "hifiberry-dacplus"
     "hifiberry-dacplushd"
     "iqaudio-dacplus"
