@@ -411,6 +411,9 @@ main_menu() {
                 fi
                 read -r -p "Press Enter to continue..."
                 ;;
+            1) install_packages ;;
+            2) backup_files ;;
+            3) preview_system_files ;;
             4) 
                 HAT_MODEL_SELECTED=$(select_model)
                 configure_quality "$HAT_MODEL_SELECTED"
@@ -428,12 +431,17 @@ main_menu() {
                     read -r -p "Press Enter to continue..."
                 fi
                 ;;
-            10) exit 0 ;;
+            6) apply_configs ;;
+            7) compare_backups ;;
+            8) test_audio ;;
+            9) restore_backup_menu ;;
+            10) cleanup_backups_menu ;;
+            11) exit 0 ;;
             *) 
                 if [[ "$MENU_LANG" == "en" ]]; then
-                    echo "Option not yet implemented in modular version."
+                    echo "Invalid choice."
                 else
-                    echo "Opcja jeszcze nie zaimplementowana w wersji modularnej."
+                    echo "Nieprawidłowy wybór."
                 fi
                 read -r -p "Press Enter to continue..."
                 ;;
@@ -443,4 +451,5 @@ main_menu() {
 
 # Eksport funkcji
 export -f print_header select_model configure_quality main_menu
+export -f install_packages test_audio preview_system_files compare_backups restore_backup_menu cleanup_backups_menu
 export MENU_LANG HAT_MODEL_SELECTED
