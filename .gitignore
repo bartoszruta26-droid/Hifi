@@ -1,1 +1,1 @@
-Nothing should be ignored based on the provided file changes. The modified files ('lib/core.sh', 'lib/ui.sh') are shell script source files that should be tracked in version control. No build artifacts, dependencies, or temporary files are present in the changes.
+Nothing should be ignored since only a shell script file (`rpi4_audio_setup_v3.sh`) was modified and no build artifacts, dependencies, or temporary files were detected in the changes.
