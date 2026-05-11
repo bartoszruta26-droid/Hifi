@@ -1,3 +1,1 @@
-# No changes needed - only documentation files were modified
-
-The changes only include README.md and readme.en.md which are documentation files that should not be ignored. No build artifacts, dependencies, or temporary files were detected in the changes.
+Nothing should be ignored based on the provided file changes. The modified files ('lib/core.sh', 'lib/ui.sh') are shell script source files that should be tracked in version control. No build artifacts, dependencies, or temporary files are present in the changes.
