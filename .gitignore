@@ -1,96 +1,47 @@
-# Examples
-#   kernel.org/pub/linux/docs/.../Documentation/CodingStyle
-#   github.com/github/gitignore/blob/master/Global/Linux.gitignore
-#
-#*.swp
-#*~
+# Compiled and build artifacts
+*.pyc
+__pycache__/
+*.o
+*.obj
+*.out
+*.so
+*.dll
+*.exe
 
-# Thumbnails
-.#*
-*.#*
-
-# Temporary files
-/tmp/*
-/var/tmp/*
-
-# Local configuration
-.config
-.local
-.cache
-
-# Lock files
-*.lock
-
-# Logs
-*.log
-
-# Environment variables
+# Dependencies
+node_modules/
+venv/
+.venv/
 .env
 .env.local
-.env.*
+*.env.*
 
-# Backup files
-*~
-*.bak
-*.backup
+# Logs and temp files
+*.log
+*.tmp
+*.swp
+*.swo
 
-# OS generated files
-.DS_Store
-Thumbs.db
-ehthumbs.db
-Icon?
-desktop.ini
-
-# Python
-__pycache__/
-*.py[cod]
-*$py.class
-*.so
-.Python
-build/
-develop-eggs/
-dist/
-downloads/
-eggs/
-.eggs/
-lib/
-lib64/
-parts/
-sdist/
-var/
-wheels/
-*.egg-info/
-.installed.cfg
-*.egg
-MANIFEST
-
-# Node
-node_modules/
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-
-# Virtual environments
-venv/
-ENV/
-
-# IDE
+# Editors
 .vscode/
 .idea/
 
-# Build
-target/
+# Build systems
 build/
 dist/
-*.out
-*.exe
-*.dll
-*.so
-*.a
-*.o
-*.obj
+target/
+.gradle/
+.mypy_cache/
+.pytest_cache/
+coverage/
+htmlcov/
+*.coverage
 
-# Compressed
+# System files
+.DS_Store
+Thumbs.db
+
+# Compressed files
 *.zip
 *.gz
 *.tar
@@ -113,14 +64,3 @@ dist/
 *.tar.bz2
 *.tar.xz
 *.tar.zst
-
-# Coverage
-coverage/
-htmlcov/
-.coverage
-
-# Cache
-.mypy_cache/
-.pytest_cache/
-.gradle/
-.cargo/

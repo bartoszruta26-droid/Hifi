@@ -66,12 +66,12 @@ DEFAULT_MENU_LANG="pl"
 
 # Kolory ANSI (z fallback dla terminali bez kolorów)
 declare -gA COLORS=(
-    [RED]=$(tput setaf 1 2>/dev/null || echo '\033[0;31m')
-    [GREEN]=$(tput setaf 2 2>/dev/null || echo '\033[0;32m')
-    [YELLOW]=$(tput setaf 3 2>/dev/null || echo '\033[1;33m')
-    [BLUE]=$(tput setaf 4 2>/dev/null || echo '\033[0;34m')
-    [CYAN]=$(tput setaf 6 2>/dev/null || echo '\033[0;36m')
-    [NC]=$(tput sgr0 2>/dev/null || echo '\033[0m')
+    [RED]=$(tput setaf 1 2>/dev/null || printf '\033[0;31m')
+    [GREEN]=$(tput setaf 2 2>/dev/null || printf '\033[0;32m')
+    [YELLOW]=$(tput setaf 3 2>/dev/null || printf '\033[1;33m')
+    [BLUE]=$(tput setaf 4 2>/dev/null || printf '\033[0;34m')
+    [CYAN]=$(tput setaf 6 2>/dev/null || printf '\033[0;36m')
+    [NC]=$(tput sgr0 2>/dev/null || printf '\033[0m')
 )
 
 # Baza danych możliwości DAC HAT
