@@ -132,7 +132,7 @@ The script includes predefined profiles for:
 
 | No | DAC Model | Overlay | Max Sample Rate | Max Bit Depth |
 |----|-----------|---------|-----------------|---------------|
-| 1-2 | R38 / Generic I2S DAC | `hifiberry-dacplus` | 384 kHz | 32 bit |
+| 1-2 | R38 / Generic I2S DAC | `hifiberry-dac` | 384 kHz | 32 bit |
 | 3 | HiFiBerry DAC+ HD | `hifiberry-dacplushd` | 768 kHz | 32 bit |
 | 4 | JustBoom DAC HAT | `justboom-dac` | 384 kHz | 32 bit |
 | 5 | IQaudio DAC Pro / DAC+ | `iqaudio-dacplus` | 384 kHz | 32 bit |
@@ -143,7 +143,7 @@ The script includes predefined profiles for:
 | 10 | AudioInjector (WM8731) | `audioinjector-wm8731-audio` | 96 kHz | 24 bit |
 | 11 | Other / Custom | manual entry | depends on model | depends on model |
 
-> **Note**: For R38 and similar HATs, the default overlay is **`hifiberry-dacplus`** as the main/generic DAC.
+> **Note**: For R38 and similar HATs, the default overlay is **`hifiberry-dac`** as the main/generic DAC.
 
 ---
 
