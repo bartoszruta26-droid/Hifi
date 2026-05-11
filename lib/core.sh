@@ -4,10 +4,24 @@
 # RPi4 Audio Setup - Core Library
 # Moduł rdzeniowy: stałe, konfiguracja globalna, utils
 # ==========================================
+# DEBUG: Ten plik zawiera podstawowe stałe i funkcje pomocnicze
+# używane przez wszystkie inne moduły skryptu
+# Odpowiada za:
+#   - Definicję ścieżek systemowych
+#   - Tablice kolorów ANSI
+#   - Bazę danych możliwości DAC HAT
+#   - Funkcje logowania i walidacji
+# ==========================================
 
 set -euo pipefail
 
-# Ścieżki systemowe (readonly)
+# ==========================================
+# ŚCIEŻKI SYSTEMOWE (readonly)
+# ==========================================
+# DEBUG: Definiujemy ścieżki do kluczowych plików konfiguracyjnych
+# /boot/firmware - nowa lokalizacja w Raspberry Pi OS Trixie
+# /boot - stara lokalizacja w Raspberry Pi OS Bookworm i wcześniejszych
+# ==========================================
 readonly BOOT_FW="/boot/firmware"
 readonly BOOT_CFG_DEFAULT="/boot/firmware/config.txt"
 readonly BOOT_CFG_LEGACY="/boot/config.txt"
@@ -15,7 +29,13 @@ readonly PULSE_DAEMON="/etc/pulse/daemon.conf"
 readonly PULSE_DEFAULT="/etc/pulse/default.pa"
 readonly MPD_CONF="/etc/mpd.conf"
 
-# Katalogi robocze
+# ==========================================
+# KATALOGI ROBOCZE
+# ==========================================
+# DEBUG: STAGING_DIR - katalog tymczasowy do generowania nowych plików konfiguracyjnych
+# BACKUP_BASE - baza danych kopii zapasowych plików systemowych
+# LOG_FILE - plik dziennika zdarzeń skryptu
+# ==========================================
 readonly STAGING_DIR="/tmp/rpi_audio_staging"
 readonly BACKUP_BASE="$HOME/.rpi_audio_backup"
 readonly LOG_FILE="$HOME/.rpi_audio_script.log"

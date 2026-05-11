@@ -4,17 +4,54 @@
 # RPi4 Audio Setup - Interactive UI Module
 # Moduł interfejsu użytkownika: menu, wybór modelu, konfiguracja jakości
 # ==========================================
+# DEBUG: Ten moduł odpowiada za interaktywny interfejs użytkownika
+# - print_header: wyświetla nagłówek w wybranym języku
+# - select_model: pozwala wybrać model DAC HAT z listy 11 opcji
+# - configure_quality: konfiguruje parametry jakości audio
+# - main_menu: główne menu aplikacji
+# ==========================================
 
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-source "$SCRIPT_DIR/core.sh"
-source "$SCRIPT_DIR/backup.sh"
-source "$SCRIPT_DIR/config_generator.sh"
 
-# Zmienne sesji
-declare -g MENU_LANG="${DEFAULT_MENU_LANG}"
+# ==========================================
+# ŁADOWANIE MODUŁÓW ZALEŻNYCH
+# ==========================================
+# DEBUG: Ładujemy core.sh jako pierwszy - zawiera stałe i funkcje podstawowe
+# Następnie backup.sh, config_generator.sh - będą używane w menu
+# ==========================================
+if [[ ! -f "$SCRIPT_DIR/core.sh" ]]; then
+    echo "[BŁĄD] Nie znaleziono core.sh w $SCRIPT_DIR" >&2
+    exit 1
+fi
+source "$SCRIPT_DIR/core.sh"
+log "DEBUG: Załadowano core.sh" "DEBUG"
+
+if [[ ! -f "$SCRIPT_DIR/backup.sh" ]]; then
+    log "ERROR: Nie znaleziono backup.sh" "ERROR"
+    exit 1
+fi
+source "$SCRIPT_DIR/backup.sh"
+log "DEBUG: Załadowano backup.sh" "DEBUG"
+
+if [[ ! -f "$SCRIPT_DIR/config_generator.sh" ]]; then
+    log "ERROR: Nie znaleziono config_generator.sh" "ERROR"
+    exit 1
+fi
+source "$SCRIPT_DIR/config_generator.sh"
+log "DEBUG: Załadowano config_generator.sh" "DEBUG"
+
+# ==========================================
+# ZMIENNE SESJI
+# ==========================================
+# DEBUG: MENU_LANG - przechowuje aktualny język ('pl' lub 'en')
+# HAT_MODEL_SELECTED - przechowuje wybrany model DAC po wyborze z menu
+# ==========================================
+declare -g MENU_LANG="${DEFAULT_MENU_LANG:-pl}"
 declare -g HAT_MODEL_SELECTED=""
+
+log "DEBUG: Inicjalizacja UI - język domyślny: $MENU_LANG" "DEBUG"
 
 # ==========================================
 # FUNKCJE UI
