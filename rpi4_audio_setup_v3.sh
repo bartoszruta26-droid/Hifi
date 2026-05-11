@@ -31,7 +31,7 @@ install_packages() {
     local DEPS="mpd pulseaudio pulseaudio-utils alsa-utils sox libsoxr-dev mpc"
     
     echo "Instalowanie: $DEPS"
-    if apt-get install -y --no-install-recommends $DEPS; then
+    if apt-get install -y --no-install-recommends "$DEPS"; then
         echo -e "${COLORS[GREEN]}✅ Pakiety zainstalowane.${COLORS[NC]}"
         log "Packages installed successfully" "SUCCESS"
     else

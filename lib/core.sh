@@ -22,12 +22,12 @@ set -euo pipefail
 # /boot/firmware - nowa lokalizacja w Raspberry Pi OS Trixie
 # /boot - stara lokalizacja w Raspberry Pi OS Bookworm i wcześniejszych
 # ==========================================
-readonly BOOT_FW="/boot/firmware"
-readonly BOOT_CFG_DEFAULT="/boot/firmware/config.txt"
-readonly BOOT_CFG_LEGACY="/boot/config.txt"
-readonly PULSE_DAEMON="/etc/pulse/daemon.conf"
-readonly PULSE_DEFAULT="/etc/pulse/default.pa"
-readonly MPD_CONF="/etc/mpd.conf"
+BOOT_FW="/boot/firmware"
+BOOT_CFG_DEFAULT="/boot/firmware/config.txt"
+BOOT_CFG_LEGACY="/boot/config.txt"
+PULSE_DAEMON="/etc/pulse/daemon.conf"
+PULSE_DEFAULT="/etc/pulse/default.pa"
+MPD_CONF="/etc/mpd.conf"
 
 # ==========================================
 # KATALOGI ROBOCZE
@@ -36,33 +36,33 @@ readonly MPD_CONF="/etc/mpd.conf"
 # BACKUP_BASE - baza danych kopii zapasowych plików systemowych
 # LOG_FILE - plik dziennika zdarzeń skryptu
 # ==========================================
-readonly STAGING_DIR="/tmp/rpi_audio_staging"
-readonly BACKUP_BASE="$HOME/.rpi_audio_backup"
-readonly LOG_FILE="$HOME/.rpi_audio_script.log"
+STAGING_DIR="/tmp/rpi_audio_staging"
+BACKUP_BASE="$HOME/.rpi_audio_backup"
+LOG_FILE="$HOME/.rpi_audio_script.log"
 
 # Domyślne wartości najwyższej jakości audio
-readonly DEFAULT_SAMPLE_RATE="768000"
-readonly DEFAULT_BIT_DEPTH="32"
-readonly DEFAULT_RESAMPLE_METHOD="soxr-vhq"
-readonly DEFAULT_MPD_CONVERTER="soxr"
-readonly DEFAULT_MIXER_TYPE="hardware"
-readonly DEFAULT_VOLUME_CURVE="logarithmic"
-readonly DEFAULT_DITHER_ENABLED="no"
-readonly DEFAULT_BUFFER_SIZE="40960"
-readonly DEFAULT_CLOCK_SOURCE="internal"
-readonly DEFAULT_OUTPUT_FORMAT="float64le"
-readonly DEFAULT_ZERO_CROSSING="no"
-readonly DEFAULT_SOFT_CLIP="no"
-readonly DEFAULT_HAT_MODEL="hifiberry-dac"
-readonly DEFAULT_CLOCK_MODE="master"
-readonly DEFAULT_OUTPUT_DELAY="0"
-readonly DEFAULT_AUTO_MUTE="no"
-readonly DEFAULT_VOLUME_GAIN="0"
-readonly DEFAULT_DEEMPHASIS="auto"
-readonly DEFAULT_CHANNEL_MODE="stereo"
+DEFAULT_SAMPLE_RATE="768000"
+DEFAULT_BIT_DEPTH="32"
+DEFAULT_RESAMPLE_METHOD="soxr-vhq"
+DEFAULT_MPD_CONVERTER="soxr"
+DEFAULT_MIXER_TYPE="hardware"
+DEFAULT_VOLUME_CURVE="logarithmic"
+DEFAULT_DITHER_ENABLED="no"
+DEFAULT_BUFFER_SIZE="40960"
+DEFAULT_CLOCK_SOURCE="internal"
+DEFAULT_OUTPUT_FORMAT="float64le"
+DEFAULT_ZERO_CROSSING="no"
+DEFAULT_SOFT_CLIP="no"
+DEFAULT_HAT_MODEL="hifiberry-dac"
+DEFAULT_CLOCK_MODE="master"
+DEFAULT_OUTPUT_DELAY="0"
+DEFAULT_AUTO_MUTE="no"
+DEFAULT_VOLUME_GAIN="0"
+DEFAULT_DEEMPHASIS="auto"
+DEFAULT_CHANNEL_MODE="stereo"
 
 # Język domyślny
-readonly DEFAULT_MENU_LANG="pl"
+DEFAULT_MENU_LANG="pl"
 
 # Kolory ANSI (z fallback dla terminali bez kolorów)
 declare -gA COLORS=(
@@ -90,9 +90,9 @@ declare -gA DAC_CAPABILITIES=(
 )
 
 # Wartości domyślne dla nieznanego DAC
-readonly DEFAULT_MAX_RATE="384000"
-readonly DEFAULT_MAX_BIT="32"
-readonly DEFAULT_RATES="44100,48000,88200,96000,176400,192000,352800,384000"
+DEFAULT_MAX_RATE="384000"
+DEFAULT_MAX_BIT="32"
+DEFAULT_RATES="44100,48000,88200,96000,176400,192000,352800,384000"
 
 # Lista poprawnych overlayów (whitelist bezpieczeństwa)
 declare -ga VALID_OVERLAYS=(

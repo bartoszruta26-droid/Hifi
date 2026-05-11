@@ -37,9 +37,11 @@ apply_daemon_conf() {
         done
         
         # Dodaj nowe linie na końcu
-        echo "" >> "$PULSE_DAEMON"
-        echo "# === New Audio HQ Settings $(date) ===" >> "$PULSE_DAEMON"
-        grep -v "^#" "$new_file" | grep -v "^$" >> "$PULSE_DAEMON"
+        {
+            echo ""
+            echo "# === New Audio HQ Settings $(date) ==="
+            grep -v "^#" "$new_file" | grep -v "^$"
+        } >> "$PULSE_DAEMON"
         
         log "Modified $PULSE_DAEMON"
     else
@@ -143,7 +145,8 @@ apply_config_txt() {
     
     # Backup
     if [[ -f "$target_cfg" ]]; then
-        local backup_file="$BACKUP_BASE/config.txt.$(date +%Y%m%d_%H%M%S).bak"
+        local backup_file
+        backup_file="$BACKUP_BASE/config.txt.$(date +%Y%m%d_%H%M%S).bak"
         cp "$target_cfg" "$backup_file"
         echo "Backup utworzony: $backup_file"
         
