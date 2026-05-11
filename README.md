@@ -285,8 +285,10 @@ dtparam=audio=off
 |----------|------------------|--------------|------------|
 | `dtoverlay` | brak | `hifiberry-dac` (lub inny) | Aktywacja DAC HAT |
 | `dtparam=audio` | `on` | `off` | Wyłączenie onboard audio |
-| `dtparam=i2s` | `off` | `on` | Włączenie interfejsu I2S dla DAC |
-| `dtparam=i2c` | `off` | `on` | Włączenie interfejsu I2C dla komunikacji z DAC |
+| `dtparam=i2c_arm` | `off` | `on` | Włączenie interfejsu I2C dla komunikacji z DAC |
+| `dtparam=i2c_baudrate` | - | `400000` | Prędkość magistrali I2C (400kHz) |
+
+> **Uwaga**: Overlay `dtoverlay=hifiberry-dac` automatycznie włącza interfejs **I2S** do przesyłania dźwięku wysokiej jakości. Interfejs **I2C** jest jawnie włączany przez `dtparam=i2c_arm=on` do konfiguracji rejestrów DAC.
 
 ---
 

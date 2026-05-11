@@ -208,12 +208,18 @@ generate_config_txt() {
         # Używamy bardziej precyzyjnych regexów
         sed -i '/^dtoverlay[[:space:]]*=[[:space:]]*\(hifiberry\|justboom\|iqaudio\|allo-boss\|allo-katana\|googlevoicehat\|audioinjector\|i2s-dac\)/d' "$output_file"
         sed -i '/^dtparam[[:space:]]*=[[:space:]]*audio=/d' "$output_file"
+        sed -i '/^dtparam[[:space:]]*=[[:space:]]*i2c/d' "$output_file"
+        sed -i '/^dtparam[[:space:]]*=[[:space:]]*spi=/d' "$output_file"
         
         # Dodaj nowy wpis na końcu
         {
             echo ""
             echo "# === Audio HAT Configuration ==="
             echo "# Added by RPi4 Audio Setup on $(date '+%Y-%m-%d %H:%M')"
+            echo "# I2S - Interfejs audio (High Quality)"
+            echo "# I2C - Interfejs konfiguracyjny DAC"
+            echo "dtparam=i2c_arm=on"
+            echo "dtparam=i2c_baudrate=400000"
             echo "dtoverlay=${HAT_MODEL}"
             echo "dtparam=audio=off"
         } >> "$output_file"
@@ -224,7 +230,14 @@ generate_config_txt() {
         cat > "$output_file" << EOF
 # === RPi4 Audio HAT Configuration ===
 # Generated: $(date '+%Y-%m-%d %H:%M:%S')
+# I2S - Interfejs audio (High Quality)
+# I2C - Interfejs konfiguracyjny DAC
 
+# Włączenie I2C
+dtparam=i2c_arm=on
+dtparam=i2c_baudrate=400000
+
+# Overlay DAC (automatycznie włącza I2S)
 dtoverlay=${HAT_MODEL}
 dtparam=audio=off
 EOF
