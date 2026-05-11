@@ -2,14 +2,18 @@
 
 Script automating high-quality audio configuration on Raspberry Pi 4 with external DAC HAT (including R38) on Debian Trixie/Bookworm systems.
 
+**Version 3.0** - Modular, safe architecture with advanced audio quality configuration.
+
 ## ✨ Features
 
 - **Multiple HAT Support**: R38, HiFiBerry, JustBoom, IQaudio, Allo, Pimoroni and others
-- **Quality Configuration**: Sample rate selection (44.1kHz - 768kHz)
-- **Highest Quality Resampling**: soxr highest, speex-float-10 and other options
+- **Quality Configuration**: Sample rate selection (44.1kHz - 768kHz) and bit depth (16/24/32 bit)
+- **Highest Quality Resampling**: soxr-vhq, soxr, speex-float-10 and other options
 - **PulseAudio + MPD Optimization**: Ready profiles for Hi-Res Audio
-- **Safety**: Automatic backup before changes
-- **Audio Testing**: Built-in diagnostic tools
+- **Safety**: Automatic backup before changes, configuration restore
+- **Audio Testing**: Built-in diagnostic tools (speaker-test, paplay)
+- **Bilingual Interface**: Polish / English
+- **Modular Design**: Easy code expansion and maintenance
 
 ---
 
@@ -29,24 +33,28 @@ Script automating high-quality audio configuration on Raspberry Pi 4 with extern
 
 ```bash
 cd ~
-wget https://raw.githubusercontent.com/bartoszruta26-droid/Hifi/main/rpi4_audio_setup.sh
-chmod +x rpi4_audio_setup.sh
+wget https://raw.githubusercontent.com/bartoszruta26-droid/Hifi/main/rpi4_audio_setup_v3.sh
+chmod +x rpi4_audio_setup_v3.sh
 ```
 
 ### 2. Run the script
 
 ```bash
-sudo bash rpi4_audio_setup.sh
+sudo bash rpi4_audio_setup_v3.sh
 ```
 
 ### 3. Recommended Operation Order
 
-1. **Option 1** - Install packages (`mpd`, `pulseaudio`, `sox`)
+1. **Option 1** - Install packages (`mpd`, `pulseaudio`, `sox`, `alsa-utils`)
 2. **Option 2** - Create backup of current files
-3. **Option 4** - Generate configuration:
-   - Select HAT model (for R38: option 1 "Justboom DAC")
-   - Select quality (recommended: 384 kHz + soxr highest)
-4. **Option 5** - Apply configuration and restart
+3. **Option 4** - Select HAT model + configure quality:
+   - Select HAT model (for R38: option 1-2 "R38 / Generic I2S DAC")
+   - Select Sample Rate (recommended: highest available for your DAC)
+   - Select Bit Depth (recommended: 32 bit)
+   - Select resampling method (recommended: soxr-vhq)
+   - Select mixer type (recommended: hardware)
+4. **Option 5** - Generate configuration
+5. **Option 6** - Apply configuration and restart
 
 ---
 
@@ -54,29 +62,46 @@ sudo bash rpi4_audio_setup.sh
 
 | No | Function | Description |
 |----|----------|-------------|
+| 0 | 🌐 Change language | Switch between Polish and English |
 | 1 | 📦 Package Installation | mpd, pulseaudio, alsa-utils, sox, libsoxr-dev |
 | 2 | 💾 Backup | Backup copies of configuration files |
 | 3 | 👁️ Preview | View current system files |
-| 4 | ⚙️ Generate Configuration | **Key**: HAT selection + quality parameters |
-| 5 | 🚀 Apply and Restart | Overwrite files + reboot (required for HAT) |
-| 6 | 🔍 Compare | Differences between backup and new files |
-| 7 | 🔊 Sound Test | speaker-test + paplay diagnostics |
-| 8 | 🛑 Exit | End script execution |
+| 4 | ⚙️ Select HAT + Configure Quality | **Key**: DAC model selection + quality parameters |
+| 5 | 🚀 Generate Configuration | Prepare files in staging directory |
+| 6 | 🔧 Apply Configuration | Overwrite system files + restart services |
+| 7 | 🔍 Compare | Differences between backup and new files |
+| 8 | 🔊 Sound Test | speaker-test + paplay diagnostics |
+| 9 | 🔄 Restore from Backup | Restore previous configurations |
+| 10 | 🛑 Exit | End script execution |
 
 ---
 
 ## 🎛️ Quality Configuration (Option 4)
 
+The script automatically adjusts available options to the capabilities of the selected DAC HAT.
+
 ### Sample Rate
+
+Available values depend on the DAC model:
+
+| Value | Use Case |
+|-------|----------|
+| 44.1 kHz | CD Standard |
+| 48 kHz | Video, Studio |
+| 88.2 / 96 kHz | Hi-Res |
+| 176.4 / 192 kHz | High End |
+| 352.8 / 384 kHz | Ultra Hi-Res |
+| 705.6 / 768 kHz | Maximum (HD DAC only) |
+
+> **Note**: The script displays only sample rates supported by the selected DAC model.
+
+### Bit Depth
 
 | Selection | Value | Use Case |
 |-----------|-------|----------|
-| 1 | 44.1 kHz | CD Standard |
-| 2 | 48 kHz | Video, Studio |
-| 3 | 96 kHz | Hi-Res |
-| 4 | 192 kHz | High End |
-| 5 | **384 kHz** | **Ultra Hi-Res (recommended)** |
-| 6 | 768 kHz | Maximum (experimental) |
+| 1 | 16 bit | CD Standard |
+| 2 | 24 bit | Hi-Res Audio |
+| 3 | 32 bit | Maximum Quality (Recommended) |
 
 ### Resampling Method (PulseAudio)
 
@@ -86,10 +111,18 @@ sudo bash rpi4_audio_setup.sh
 | 2 | speex-float-5 | Good | Moderate |
 | 3 | speex-float-10 | Very Good | Medium |
 | 4 | soxr | High | Higher |
-| 5 | soxr very high | Studio | Large |
-| 6 | **soxr highest** | **Maximum** | **Highest** |
+| 5 | soxr-lq | Low | Lower |
+| 6 | **soxr-vhq** | **Very High** (Recommended) | Large |
 
-> **Recommendation**: For RPi4, select **384 kHz + soxr highest**. The RPi4 processor handles this configuration without issues.
+### Mixer Type
+
+| Selection | Type | Description |
+|-----------|------|-------------|
+| 1 | hardware | Direct hardware control (Recommended) |
+| 2 | software | PulseAudio software mixer |
+| 3 | none | No mixer - direct access |
+
+> **Recommendation**: For RPi4 with DAC HAT select **highest available frequency + 32 bit + soxr-vhq + hardware mixer**.
 
 ---
 
@@ -97,17 +130,20 @@ sudo bash rpi4_audio_setup.sh
 
 The script includes predefined profiles for:
 
-1. **R38 / Generic I2S DAC** (uses `justboom-dac`)
-2. HiFiBerry DAC+ / Pro / Zero
-3. HiFiBerry DAC+ HD
-4. JustBoom DAC HAT
-5. IQaudio DAC Pro / DAC+
-6. Pimoroni DACSHIM
-7. Allo Boss DAC
-8. Allo Katana DAC
-9. Google Voice HAT
-10. Audioinjector WM8804
-11. Custom (manual dtoverlay entry)
+| No | DAC Model | Overlay | Max Sample Rate | Max Bit Depth |
+|----|-----------|---------|-----------------|---------------|
+| 1-2 | R38 / Generic I2S DAC | `hifiberry-dacplus` | 384 kHz | 32 bit |
+| 3 | HiFiBerry DAC+ HD | `hifiberry-dacplushd` | 768 kHz | 32 bit |
+| 4 | JustBoom DAC HAT | `justboom-dac` | 384 kHz | 32 bit |
+| 5 | IQaudio DAC Pro / DAC+ | `iqaudio-dacplus` | 384 kHz | 32 bit |
+| 6 | Pimoroni DAC Shim | `i2s-dac` | 384 kHz | 32 bit |
+| 7 | Allo Boss DAC | `allo-boss-dac-pcm512x-audio` | 384 kHz | 32 bit |
+| 8 | Allo Katana DAC | `allo-katana-dac-audio` | 768 kHz | 32 bit |
+| 9 | Google Voice HAT | `googlevoicehat-soundcard` | 48 kHz | 16 bit |
+| 10 | AudioInjector (WM8731) | `audioinjector-wm8731-audio` | 96 kHz | 24 bit |
+| 11 | Other / Custom | manual entry | depends on model | depends on model |
+
+> **Note**: For R38 and similar HATs, the default overlay is **`hifiberry-dacplus`** as the main/generic DAC.
 
 ---
 
@@ -115,12 +151,13 @@ The script includes predefined profiles for:
 
 | File | Path | Description |
 |------|------|-------------|
-| Boot Config | `/boot/firmware/config.txt` | HAT dtoverlay |
-| Pulse Daemon | `/etc/pulse/daemon.conf` | Sample rate, resampler |
+| Boot Config | `/boot/firmware/config.txt` or `/boot/config.txt` | HAT dtoverlay |
+| Pulse Daemon | `/etc/pulse/daemon.conf` | Sample rate, resampler, output format |
 | Pulse Default | `/etc/pulse/default.pa` | PulseAudio modules |
-| MPD Config | `/etc/mpd.conf` | soxr converter, buffer |
+| MPD Config | `/etc/mpd.conf` | soxr converter, buffer, replaygain |
 | Backup | `~/.rpi_audio_backup/` | Dated backup copies |
 | Logs | `~/.rpi_audio_script.log` | Operation log |
+| Staging | `/tmp/rpi_audio_staging/` | Temporary configuration files |
 
 ---
 
@@ -129,24 +166,34 @@ The script includes predefined profiles for:
 ### No sound after restart
 1. Check if HAT is detected: `aplay -l`
 2. Ensure `dtoverlay` is correct in `/boot/firmware/config.txt`
-3. Check service status: `systemctl status mpd pulseaudio`
+3. Check service status: `systemctl --user status pulseaudio` or `systemctl status mpd`
+4. Verify correct mixer type is selected (try `hardware` or `software`)
 
 ### Crackling / sound interruptions
-- Increase buffer in MPD: edit `audio_buffer_size` in `/etc/mpd.conf`
-- Change resampler to a lighter one (e.g., `speex-float-5`)
+- Increase buffer in MPD: edit `audio_buffer_size` in `/etc/mpd.conf` (e.g., to 40960)
+- Change resampler to a lighter one (e.g., `speex-float-5` or `soxr-lq`)
 - Disable other applications using audio
+- Check CPU load: `top` or `htop`
 
 ### PipeWire conflict
-The script automatically disables `pipewire-pulse`. If problems persist:
+The script offers an option to disable `pipewire-pulse`. If problems persist:
 ```bash
 systemctl --user mask pipewire-pulse.service
 systemctl --user stop pipewire-pulse.service
 ```
 
 ### Restoring backup
+Use option 9 in the script menu or manually:
 ```bash
+# Find latest backup
+ls -la ~/.rpi_audio_backup/
+
+# Restore files
 cp ~/.rpi_audio_backup/YYYYMMDD_HHMMSS/daemon.conf /etc/pulse/
+cp ~/.rpi_audio_backup/YYYYMMDD_HHMMSS/default.pa /etc/pulse/
 cp ~/.rpi_audio_backup/YYYYMMDD_HHMMSS/mpd.conf /etc/mpd.conf
+cp ~/.rpi_audio_backup/YYYYMMDD_HHMMSS/config.txt* /boot/firmware/
+
 sudo systemctl restart pulseaudio mpd
 ```
 
@@ -154,15 +201,20 @@ sudo systemctl restart pulseaudio mpd
 
 ## 📊 Example Configuration (Max Quality)
 
-After selecting **384 kHz + soxr highest**, files will contain:
+After selecting **768 kHz + 32 bit + soxr-vhq** (for HD DAC), files will contain:
 
 **`/etc/pulse/daemon.conf`**:
 ```ini
-default-sample-format = float32le
-default-sample-rate = 384000
-resample-method = soxr highest
-avoid-resampling = yes
+# === RPi4 Audio HQ Configuration ===
+default-sample-format = float64le
+default-sample-rate = 768000
+alternate-sample-rate = 96000
+resample-method = soxr-vhq
+flat-volumes = no
 realtime-scheduling = yes
+rlimit-rtprio = 20
+exit-idle-time = -1
+log-level = error
 ```
 
 **`/etc/mpd.conf`**:
@@ -170,26 +222,36 @@ realtime-scheduling = yes
 audio_output {
     type            "pulse"
     name            "RPi4 Hi-Res Pulse"
-    mixer_type      "software"
+    mixer_type      "hardware"
 }
-samplerate_converter "soxr highest"
-audio_buffer_size "20480"
+samplerate_converter "soxr"
+audio_buffer_size "40960"
+replaygain "album"
+auto_update "yes"
+zeroconf_enabled "no"
 ```
 
 **`/boot/firmware/config.txt`**:
 ```txt
-dtoverlay=justboom-dac
+# === Audio HAT Configuration ===
+dtoverlay=hifiberry-dacplus
 dtparam=audio=off
 ```
+
+> **Note**: For HiFiBerry DAC+ HD use `hifiberry-dacplushd`, for other models use appropriate overlay from the table above.
 
 ---
 
 ## 📝 Notes
 
-- **Restart required** after first applying configuration (dtoverlay loading)
+- **Restart required** after first applying configuration (dtoverlay loading from config.txt)
 - Script creates logs in `~/.rpi_audio_script.log`
 - All backups are dated and stored in `~/.rpi_audio_backup/`
-- For R38 HAT, `justboom-dac` or `generic` overlay most commonly works
+- Configuration is generated to `/tmp/rpi_audio_staging/` before applying
+- **Main DAC**: For R38 and similar HATs use overlay **`hifiberry-dacplus`** (option 1-2 in menu)
+- For HiFiBerry DAC+ HD use `hifiberry-dacplushd` (option 3)
+- PulseAudio may require restart as user service: `systemctl --user restart pulseaudio`
+- MPD uses `soxr` converter regardless of selected PulseAudio resampling method
 
 ---
 
@@ -205,9 +267,17 @@ If you encounter problems:
 1. Check logs: `cat ~/.rpi_audio_script.log`
 2. Verify HAT model in manufacturer documentation
 3. Ensure you have updated system: `sudo apt update && sudo apt upgrade`
+4. Use option 9 (Restore from backup) to revert changes
 
 ---
 
 **Author**: AI Assistant  
-**Version**: 2.0  
-**Date**: 2024
+**Version**: 3.0 (Modular)  
+**Date**: 2024  
+**Structure**: 
+- `rpi4_audio_setup_v3.sh` - main entry point
+- `lib/core.sh` - core: constants, utils, validation
+- `lib/backup.sh` - backup and restore
+- `lib/config_generator.sh` - configuration file generation
+- `lib/applier.sh` - safe configuration application
+- `lib/ui.sh` - user interface (menu, options selection)

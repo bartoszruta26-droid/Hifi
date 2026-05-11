@@ -1,1 +1,3 @@
-Nothing should be ignored since only a README.md file was modified and no build artifacts, dependencies, or temporary files were detected in the changes.
+# No changes needed - only documentation files were modified
+
+The changes only include README.md and readme.en.md which are documentation files that should not be ignored. No build artifacts, dependencies, or temporary files were detected in the changes.
