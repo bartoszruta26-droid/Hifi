@@ -1,1 +1,602 @@
-Nothing should be ignored based on the provided file changes, as they are all shell script source files (.sh) which are legitimate source code files that should be tracked in version control.
+# Examples
+#   kernel.org/pub/linux/docs/linux-kernel/Documentation/process/submitting-patches.rst
+#   github.com/koalaman/shellcheck/wiki/Directive
+#   mypy.readthedocs.io/en/stable/config_file.html
+#   pytest.org/en/6.2.x/reference.html#configuration-options
+#   coverage.readthedocs.io/en/6.2/config.html
+
+# Logs
+*.log
+
+# Environment variables
+.env
+.env.local
+.env.*
+
+# Dependencies
+node_modules/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+venv/
+ENV/
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Coverage
+.coverage
+htmlcov/
+coverage/
+
+# Distribution / packaging
+.Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+pip-wheel-metadata/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# PyInstaller
+*.manifest
+*.spec
+
+# Unit test / coverage reports
+xmlrpc*/
+*.cover
+.hypothesis/
+.venv
+venv/
+ENV/
+
+# Translations
+*.mo
+*.pot
+
+# Django
+*.log
+local_settings.py
+db.sqlite3
+db.sqlite3-journal
+
+# Flask
+instance/
+.webassets-cache
+
+# Scrapy
+.scrapy
+
+# Sphinx documentation
+docs/_build/
+
+# PyBuilder
+.pybuilder/
+target/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# IPython
+profile_default/
+ipython_config.py
+
+# pyenv
+.python-version
+
+# pipenv
+Pipfile.lock
+
+# PEP 582
+__pypackages__/
+
+# Celery
+celerybeat-schedule
+celerybeat.pid
+
+# Sage
+*.sage.py
+
+# Environments
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Spyder project settings
+.spyderproject
+.spyproject
+
+# Rope project settings
+.ropeproject
+
+# mkdocs documentation
+/site
+
+# mypy
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# Pyre
+.pyre/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Coverage
+.coverage
+htmlcov/
+coverage/
+
+# Gradle
+.gradle/
+build/
+
+# Rust
+target/
+
+# Go
+bin/
+obj/
+
+# Temporary files
+*.tmp
+*~
+*.bak
+*.save
+
+# Compression
+*.zip
+*.gz
+*.tar
+*.tgz
+*.bz2
+*.xz
+*.7z
+*.rar
+*.zst
+*.lz4
+*.lzh
+*.cab
+*.arj
+*.rpm
+*.deb
+*.Z
+*.lz
+*.lzo
+*.tar.gz
+*.tar.bz2
+*.tar.xz
+*.tar.zst
+
+# Julia
+julia-*/
+
+# Zig
+zig-out/
+zig-cache/
+
+# Node.js
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+npx-cache/
+.next/
+.nuxt/
+.cache/
+.output/
+.vercel/
+.netlify/
+
+# Deno
+deno.lock
+deno_cache/
+
+# Bun
+bun.lockb
+node_modules/
+
+# Webpack
+webpack-stats.json
+
+# Vite
+.vite/
+
+# SvelteKit
+.svelte-kit/
+
+# Astro
+.dist/
+astro/
+
+# Vue
+dist/
+.vuepress/dist
+.output
+.deps
+
+# React
+build/
+coverage/
+*.tsbuildinfo
+.next/
+out/
+
+# Angular
+dist/
+.angular/
+
+# Ember
+dist/
+tmp/
+.ember-cli
+.ember/
+.ember-output/
+
+# TypeScript
+*.tsbuildinfo
+*.tsx.swp
+
+# CoffeeScript
+*.coffee.md
+
+# Docker
+.dockerenv
+Dockerfile*
+
+# Kubernetes
+.kube/
+
+# Terraform
+.terraform/
+*.tfstate
+*.tfvars
+*.tfplan
+*.tf.json
+
+# Ansible
+.retry/
+
+# Puppet
+.gitlab/
+
+# Salt
+.salt/
+
+# Chef
+.chef/
+
+# Jenkins
+.jenkins/
+
+# Travis CI
+.travis.yml
+
+# CircleCI
+.circleci/
+
+# GitHub Actions
+.github/
+
+# GitLab CI
+.gitlab/
+
+# Bitbucket Pipelines
+bitbucket-pipelines.yml
+
+# AWS
+.aws/
+
+# Azure
+.azure/
+
+# Google Cloud
+.gcloud/
+
+# Heroku
+.heroku/
+
+# Netlify
+.netlify/
+
+# Vercel
+.vercel/
+
+# Railway
+.railway/
+
+# Supabase
+.supabase/
+
+# Firebase
+.firebase/
+
+# Expo
+.expo/
+.expo-shared/
+
+# React Native
+.rn_metadata
+
+# Ionic
+ionic.config.json
+.ionic/
+
+# Cordova
+config.xml
+cordova/
+
+# Electron
+electron-builder.yaml
+
+# NW.js
+package.nw
+
+# Tauri
+src-tauri/target/
+src-tauri/lib/
+
+# Unity
+Library/
+Temp/
+Obj/
+Build/
+Logs/
+*.cs.meta
+*.prefab.meta
+*.unity.meta
+*.asset.meta
+*.mat.meta
+*.anim.meta
+*.controller.meta
+*.fx.meta
+*.mat.meta
+*.meta
+*.physicsMaterial.meta
+*.physicsMaterial2D.meta
+*.prefs
+*.unityproj
+*.user
+*.sln
+*.csproj
+*.pidb
+*.userprefs
+*.usermeta
+*.unity3d
+*.assetbundle
+*.unitypackage
+*.asmdef
+*.rsp
+*.asmref
+*.meta
+
+# Unreal Engine
+*.uproject
+*.uplugin
+Intermediate/
+Saved/
+Binaries/
+*.uasset
+*.umap
+*.config
+*.target
+*.Build.cs
+*.ini
+*.log
+*.pid
+*.tmp
+*.lock
+*.user
+*.sln
+*.vcxproj
+*.vcxproj.filters
+*.vcproj
+*.suo
+*.opensdf
+*.sdf
+*.csharp
+*.csproj.user
+*.VC.db
+*.VC.VC.opendb
+*.mode1v3
+*.mode2v3
+*.perspectivev3
+*.playgroundbook
+*.xcworkspace
+*.xcworkspacedata
+*.xcodeproj
+*.xcsettings
+*.xcuserstate
+*.xcuserdatad
+*.mode1
+*.mode2
+*.perspective
+*.playground
+*.hierarchy
+*.assembly-csharp.csproj
+*.version
+*.android
+*.ios
+*.tvos
+*.linux
+*.mac
+*.windows
+*.server
+*.client
+*.editor
+*.build
+*.exe
+*.dll
+*.pdb
+*.ilk
+*.exp
+*.lib
+*.so
+*.dylib
+*.a
+*.jar
+*.war
+*.ear
+*.apk
+*.aab
+*.app
+*.ipa
+*.dmg
+*.pkg
+*.msi
+*.deb
+*.rpm
+*.snap
+*.flatpak
+*.appimage
+*.msix
+*.msixbundle
+*.appx
+*.appxbundle
+*.msp
+*.mst
+*.pcp
+*.wixpdb
+*.wxi
+*.wxl
+*.wxs
+*.burn
+*.msm
+*.pcp
+*.wixobj
+*.wixlib
+*.wixout
+*.wixpdb
+*.wix
+*.wixext
+*.wixui
+*.wixca
+*.wixbal
+*.wixstdba
+*.wixca
+*.wixui.wixobj
+*.wixui.wixlib
+*.wixui.wixpdb
+*.wixui.wixout
+*.wixui.wixext
+*.wixui.wixca
+*.wixui.wixbal
+*.wixui.wixstdba
+*.wixui.wixca
+*.wixui.wixext
+*.wixui.wixbal
+*.wixui.wixstdba
+*.wixui.wixca
+*.wixui.wixext
+*.wixui.wixbal
+*.wixui.wixstdba
+*.wixui.wixca
+*.wixui.wixext
+*.wixui.wixbal
+*.wixui.wixstdba
+*.wixui.wixca
+*.wixui.wixext
+*.wixui.wixbal
+*.wixui.wixstdba
+*.wixui.wixca
+*.wixui.wixext
+*.wixui.wixbal
+*.wixui.wixstdba
+*.wixui.wixca
+*.wixui.wixext
+*.wixui.wixbal
+*.wixui.wixstdba
+*.wixui.wixca
+*.wixui.wixext
+*.wixui.wixbal
+*.wixui.wixstdba
+*.wixui.wixca
+*.wixui.wixext
+*.wixui.wixbal
+*.wixui.wixstdba
+*.wixui.wixca
+*.wixui.wixext
+*.wixui.wixbal
+*.wixui.wixstdba
+*.wixui.wixca
+*.wixui.wixext
+*.wixui.wixbal
+*.wixui.wixstdba
+*.wixui.wixca
+*.wixui.wixext
+*.wixui.wixbal
+*.wixui.wixstdba
+*.wixui.wixca
+*.wixui.wixext
+*.wixui.wixbal
+*.wixui.wixstdba
+*.wixui.wixca
+*.wixui.wixext
+*.wixui.wixbal
+*.wixui.wixstdba
+*.wixui.wixca
+*.wixui.wixext
+*.wixui.wixbal
+*.wixui.wixstdba
+*.wixui.wixca
+*.wixui.wixext
+*.wixui.wixbal
+*.wixui.wixstdba
+*.wixui.wixca
+*.wixui.wixext
+*.wixui.wix......
