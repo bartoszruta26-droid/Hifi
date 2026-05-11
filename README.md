@@ -143,6 +143,8 @@ Skrypt zawiera predefiniowane profile dla:
 | 10 | AudioInjector (WM8731) | `audioinjector-wm8731-audio` | 96 kHz | 24 bit |
 | 11 | Inny / Własny | ręczne wpisanie | zależne od modelu | zależne od modelu |
 
+> **Uwaga**: Dla R38 i podobnych HAT-ów domyślnie używany jest overlay **`hifiberry-dacplus`** jako główny/generic DAC.
+
 ---
 
 ## 📁 Lokalizacje Plików
@@ -232,9 +234,11 @@ zeroconf_enabled "no"
 **`/boot/firmware/config.txt`**:
 ```txt
 # === Audio HAT Configuration ===
-dtoverlay=hifiberry-dacplushd
+dtoverlay=hifiberry-dacplus
 dtparam=audio=off
 ```
+
+> **Uwaga**: Dla HiFiBerry DAC+ HD użyj `hifiberry-dacplushd`, dla innych modeli odpowiedni overlay z tabeli powyżej.
 
 ---
 
@@ -244,7 +248,8 @@ dtparam=audio=off
 - Skrypt tworzy logi w `~/.rpi_audio_script.log`
 - Wszystkie backupy są datowane i przechowywane w `~/.rpi_audio_backup/`
 - Konfiguracja jest generowana do `/tmp/rpi_audio_staging/` przed zastosowaniem
-- Dla R38 HAT użyj opcji 1-2 (overlay: `hifiberry-dacplus`)
+- **Główny DAC**: Dla R38 i podobnych HAT-ów użyj overlay **`hifiberry-dacplus`** (opcja 1-2 w menu)
+- Dla HiFiBerry DAC+ HD użyj `hifiberry-dacplushd` (opcja 3)
 - PulseAudio może wymagać restartu jako usługa użytkownika: `systemctl --user restart pulseaudio`
 - MPD korzysta z konwertera `soxr` niezależnie od wybranej metody resamplingu PulseAudio
 
