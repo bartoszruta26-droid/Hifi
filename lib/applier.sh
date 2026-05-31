@@ -7,6 +7,10 @@
 
 set -euo pipefail
 
+# Guard przed wielokrotnym sourcingiem
+[[ -n "${_APPLIER_SH_LOADED:-}" ]] && return 0
+readonly _APPLIER_SH_LOADED=1
+
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/core.sh"
 source "$SCRIPT_DIR/backup.sh"
@@ -16,150 +20,119 @@ source "$SCRIPT_DIR/config_generator.sh"
 # APLIKOWANIE KONFIGURACJI
 # ==========================================
 
+# Atomowe zastąpienie pliku — bezpieczne przy przerwaniu (Ctrl+C, reboot)
+_atomic_replace() {
+    local src="$1"
+    local dst="$2"
+    local mode="${3:-644}"
+
+    local tmp_file
+    tmp_file="$(mktemp "${dst}.XXXXXX")"
+    cp "$src" "$tmp_file"
+    chmod "$mode" "$tmp_file"
+    # mv jest atomowe na tym samym filesystem — nie może pozostawić pliku w stanie pośrednim
+    mv "$tmp_file" "$dst"
+}
+
+# Backup pojedynczego pliku do katalogu backup (ujednolicona struktura)
+_backup_single() {
+    local src="$1"
+    local label="$2"
+    local ts
+    ts="$(date +%Y%m%d_%H%M%S)"
+    local backup_dir="$BACKUP_BASE/apply_${ts}"
+
+    mkdir -p "$backup_dir"
+    cp -a "$src" "$backup_dir/${label}"
+    log "Backup before apply: $src → $backup_dir/${label}"
+}
+
+# ==========================================
+
 # Aplikowanie daemon.conf
+# POPRAWKA: atomowe zastąpienie przez mktemp + mv — idempotentne, bezpieczne
 apply_daemon_conf() {
     local new_file="$STAGING_DIR/daemon.conf.new"
-    
+
     if [[ ! -f "$new_file" ]]; then
         log "daemon.conf.new not found, run gen_configs first" "ERROR"
         return 1
     fi
-    
-    if [[ -f "$PULSE_DAEMON" ]]; then
-        # Backup przed modyfikacją
-        cp "$PULSE_DAEMON" "$STAGING_DIR/daemon.conf.bak"
-        
-        # Skomentuj stare linie naszych parametrów
-        for param in "default-sample-format" "default-sample-rate" "alternate-sample-rate" \
-                     "resample-method" "flat-volumes" "realtime-scheduling" "rlimit-rtprio" \
-                     "exit-idle-time" "log-level"; do
-            sed -i "s/^${param}[[:space:]]*=.*/#OLD_CONFIG: &/" "$PULSE_DAEMON"
-        done
-        
-        # Dodaj nowe linie na końcu
-        {
-            echo ""
-            echo "# === New Audio HQ Settings $(date) ==="
-            grep -v "^#" "$new_file" | grep -v "^$"
-        } >> "$PULSE_DAEMON"
-        
-        log "Modified $PULSE_DAEMON"
-    else
-        # Plik nie istnieje - utwórz nowy
-        cp "$new_file" "$PULSE_DAEMON"
-        log "Created $PULSE_DAEMON"
-    fi
-    
-    echo -e "${COLORS[GREEN]}✅ Zmodyfikowano $PULSE_DAEMON${COLORS[NC]}"
+
+    # Backup przed nadpisaniem (jeśli oryginał istnieje)
+    [[ -f "$PULSE_DAEMON" ]] && _backup_single "$PULSE_DAEMON" "daemon.conf"
+
+    # Upewnij się że katalog docelowy istnieje
+    mkdir -p "$(dirname "$PULSE_DAEMON")"
+
+    # Atomowe zastąpienie — brak bałaganu z #OLD_CONFIG po wielokrotnym uruchomieniu
+    _atomic_replace "$new_file" "$PULSE_DAEMON" "644"
+
+    log "Replaced $PULSE_DAEMON" "SUCCESS"
+    echo -e "${COLORS[GREEN]}✅ Zastąpiono $PULSE_DAEMON${COLORS[NC]}"
 }
 
 # Aplikowanie default.pa
 apply_default_pa() {
     local new_file="$STAGING_DIR/default.pa.new"
-    
+
     if [[ ! -f "$new_file" ]]; then
         log "default.pa.new not found" "ERROR"
         return 1
     fi
-    
-    if [[ -f "$PULSE_DEFAULT" ]]; then
-        cp "$PULSE_DEFAULT" "$STAGING_DIR/default.pa.bak"
-        
-        # Sprawdź które moduły już są załadowane i dodaj brakujące
-        while IFS= read -r line; do
-            # Pomiń komentarze i puste linie
-            [[ "$line" =~ ^# ]] && continue
-            [[ -z "$line" ]] && continue
-            
-            # Sprawdź czy CAŁA linia już istnieje
-            if ! grep -qxF "$line" "$PULSE_DEFAULT"; then
-                echo "$line" >> "$PULSE_DEFAULT"
-                log "Added module: $line"
-            fi
-        done < "$new_file"
-        
-        log "Modified $PULSE_DEFAULT"
-    else
-        # Utwórz minimalny plik
-        cat > "$PULSE_DEFAULT" << 'EOF'
-#!/usr/bin/pulseaudio -nF
-EOF
-        cat "$new_file" >> "$PULSE_DEFAULT"
-        log "Created $PULSE_DEFAULT"
-    fi
-    
-    echo -e "${COLORS[GREEN]}✅ Zmodyfikowano $PULSE_DEFAULT${COLORS[NC]}"
+
+    [[ -f "$PULSE_DEFAULT" ]] && _backup_single "$PULSE_DEFAULT" "default.pa"
+
+    mkdir -p "$(dirname "$PULSE_DEFAULT")"
+    _atomic_replace "$new_file" "$PULSE_DEFAULT" "644"
+
+    log "Replaced $PULSE_DEFAULT" "SUCCESS"
+    echo -e "${COLORS[GREEN]}✅ Zastąpiono $PULSE_DEFAULT${COLORS[NC]}"
 }
 
 # Aplikowanie mpd.conf
 apply_mpd_conf() {
     local new_file="$STAGING_DIR/mpd.conf.new"
-    
+
     if [[ ! -f "$new_file" ]]; then
         log "mpd.conf.new not found" "ERROR"
         return 1
     fi
-    
-    if [[ -f "$MPD_CONF" ]]; then
-        cp "$MPD_CONF" "$STAGING_DIR/mpd.conf.bak"
-        
-        # Usuń nasze stare parametry
-        sed -i '/^samplerate_converter/d' "$MPD_CONF"
-        sed -i '/^audio_buffer_size/d' "$MPD_CONF"
-        sed -i '/^replaygain/d' "$MPD_CONF"
-        sed -i '/^auto_update/d' "$MPD_CONF"
-        sed -i '/^zeroconf_enabled/d' "$MPD_CONF"
-        
-        # Dodaj nowe parametry z nowego pliku
-        grep -E "^(samplerate_converter|audio_buffer_size|replaygain|auto_update|zeroconf_enabled)" "$new_file" >> "$MPD_CONF"
-        
-        log "Modified $MPD_CONF"
-    else
-        cp "$new_file" "$MPD_CONF"
-        log "Created $MPD_CONF"
-    fi
-    
-    # Ustaw uprawnienia
+
+    [[ -f "$MPD_CONF" ]] && _backup_single "$MPD_CONF" "mpd.conf"
+
+    mkdir -p "$(dirname "$MPD_CONF")"
+    _atomic_replace "$new_file" "$MPD_CONF" "640"
+
+    # Ustaw uprawnienia właściciela MPD
     chown mpd:audio "$MPD_CONF" 2>/dev/null || true
-    chmod 640 "$MPD_CONF"
-    
-    echo -e "${COLORS[GREEN]}✅ Zmodyfikowano $MPD_CONF${COLORS[NC]}"
+
+    log "Replaced $MPD_CONF" "SUCCESS"
+    echo -e "${COLORS[GREEN]}✅ Zastąpiono $MPD_CONF${COLORS[NC]}"
 }
 
 # Aplikowanie config.txt
 apply_config_txt() {
     local new_file="$STAGING_DIR/config.txt.new"
     local target_cfg=""
-    
+
     if [[ ! -f "$new_file" ]]; then
         log "config.txt.new not found" "ERROR"
         return 1
     fi
-    
-    # Określ docelowy plik
+
     if [[ -d "/boot/firmware" ]]; then
         target_cfg="$BOOT_CFG_DEFAULT"
     else
         target_cfg="$BOOT_CFG_LEGACY"
     fi
-    
-    # Backup
-    if [[ -f "$target_cfg" ]]; then
-        local backup_file
-        backup_file="$BACKUP_BASE/config.txt.$(date +%Y%m%d_%H%M%S).bak"
-        cp "$target_cfg" "$backup_file"
-        echo "Backup utworzony: $backup_file"
-        
-        # Kopiuj cały plik (już zmodyfikowany przez generator)
-        cp "$new_file" "$target_cfg"
-        
-        log "Modified $target_cfg with overlay $HAT_MODEL"
-    else
-        # Plik nie istnieje - utwórz nowy
-        cp "$new_file" "$target_cfg"
-        log "Created $target_cfg"
-    fi
-    
+
+    [[ -f "$target_cfg" ]] && _backup_single "$target_cfg" "config.txt"
+
+    mkdir -p "$(dirname "$target_cfg")"
+    _atomic_replace "$new_file" "$target_cfg" "755"
+
+    log "Replaced $target_cfg with overlay $HAT_MODEL" "SUCCESS"
     echo -e "${COLORS[GREEN]}✅ Zapisano dtoverlay=${HAT_MODEL}${COLORS[NC]}"
 }
 
@@ -183,92 +156,88 @@ validate_mpd_config() {
 apply_configs() {
     print_header
     echo -e "${COLORS[RED]}⚠️  UWAGA: Ta operacja zmodyfikuje pliki systemowe!${COLORS[NC]}"
-    
-    # Sprawdź czy pliki staging istnieją
+
+    # POPRAWKA: poprawny numer opcji — generowanie to opcja 5, nie 4
     if [[ ! -f "$STAGING_DIR/daemon.conf.new" ]]; then
-        echo -e "${COLORS[RED]}⚠️  Najpierw wygeneruj konfigurację (Opcja 4)!${COLORS[NC]}"
+        echo -e "${COLORS[RED]}⚠️  Najpierw wygeneruj konfigurację (Opcja 5)!${COLORS[NC]}"
         return 1
     fi
-    
+
     read -r -p "Czy na pewno chcesz kontynuować? (tak/nie): " confirm
     if [[ "$confirm" != "tak" ]]; then
         echo "Anulowano."
         return 0
     fi
-    
+
     echo "Zatrzymywanie usług..."
-    systemctl stop mpd pulseaudio 2>/dev/null || true
-    
-    echo "Modyfikowanie plików konfiguracyjnych..."
-    
-    # Aplikuj każdy plik
+    systemctl stop mpd 2>/dev/null || true
+    systemctl --user stop pulseaudio 2>/dev/null || true
+
+    echo "Zastępowanie plików konfiguracyjnych..."
+
     apply_daemon_conf || { log "Failed to apply daemon.conf" "ERROR"; return 1; }
-    apply_default_pa || { log "Failed to apply default.pa" "ERROR"; return 1; }
-    apply_mpd_conf || { log "Failed to apply mpd.conf" "ERROR"; return 1; }
-    apply_config_txt || { log "Failed to apply config.txt" "ERROR"; return 1; }
-    
-    # Walidacja
+    apply_default_pa  || { log "Failed to apply default.pa" "ERROR"; return 1; }
+    apply_mpd_conf    || { log "Failed to apply mpd.conf" "ERROR"; return 1; }
+    apply_config_txt  || { log "Failed to apply config.txt" "ERROR"; return 1; }
+
     echo ""
     validate_mpd_config || {
         echo -e "${COLORS[YELLOW]}⚠️  Kontynuuję mimo błędu walidacji MPD${COLORS[NC]}"
     }
-    
-    # Restart usług
+
     echo ""
     echo "Restart usług..."
     systemctl daemon-reload
-    
+
     local pa_status="nieaktywna"
     local mpd_status="nieaktywna"
-    
-    # PulseAudio - sprawdź czy działa jako user service
+
     if systemctl --user is-active pulseaudio 2>/dev/null; then
-        systemctl --user restart pulseaudio 2>/dev/null && pa_status="aktywna"
+        systemctl --user restart pulseaudio 2>/dev/null && pa_status="aktywna" || pa_status="błąd"
     elif systemctl is-active pulseaudio 2>/dev/null; then
-        systemctl restart pulseaudio 2>/dev/null && pa_status="aktywna"
+        systemctl restart pulseaudio 2>/dev/null && pa_status="aktywna" || pa_status="błąd"
     else
-        # Spróbuj uruchomić
         systemctl --user start pulseaudio 2>/dev/null && pa_status="aktywna" || \
         systemctl start pulseaudio 2>/dev/null && pa_status="aktywna" || \
         pa_status="błąd"
     fi
-    
-    # MPD
+
     if systemctl is-active mpd 2>/dev/null; then
-        systemctl restart mpd 2>/dev/null && mpd_status="aktywna"
+        systemctl restart mpd 2>/dev/null && mpd_status="aktywna" || mpd_status="błąd"
     else
         systemctl start mpd 2>/dev/null && mpd_status="aktywna" || mpd_status="błąd"
     fi
-    
-    # Status
+
     echo ""
     echo "Status usług:"
     case "$pa_status" in
-        aktywna)  echo -e "  ${COLORS[GREEN]}✅${COLORS[NC]} PulseAudio: aktywna" ;;
-        błąd)     echo -e "  ${COLORS[YELLOW]}⚠️${COLORS[NC]} PulseAudio: błąd uruchomienia" ;;
-        *)        echo -e "  ${COLORS[YELLOW]}⚠️${COLORS[NC]} PulseAudio: nieaktywna" ;;
+        aktywna) echo -e "  ${COLORS[GREEN]}✅${COLORS[NC]} PulseAudio: aktywna" ;;
+        błąd)    echo -e "  ${COLORS[YELLOW]}⚠️${COLORS[NC]} PulseAudio: błąd uruchomienia" ;;
+        *)       echo -e "  ${COLORS[YELLOW]}⚠️${COLORS[NC]} PulseAudio: nieaktywna" ;;
     esac
-    
+
     case "$mpd_status" in
-        aktywna)  echo -e "  ${COLORS[GREEN]}✅${COLORS[NC]} MPD: aktywna" ;;
-        błąd)     echo -e "  ${COLORS[YELLOW]}⚠️${COLORS[NC]} MPD: błąd uruchomienia" ;;
-        *)        echo -e "  ${COLORS[YELLOW]}⚠️${COLORS[NC]} MPD: nieaktywna" ;;
+        aktywna) echo -e "  ${COLORS[GREEN]}✅${COLORS[NC]} MPD: aktywna" ;;
+        błąd)    echo -e "  ${COLORS[YELLOW]}⚠️${COLORS[NC]} MPD: błąd uruchomienia" ;;
+        *)       echo -e "  ${COLORS[YELLOW]}⚠️${COLORS[NC]} MPD: nieaktywna" ;;
     esac
-    
+
     echo ""
     echo -e "${COLORS[GREEN]}✅ Konfiguracja zastosowana!${COLORS[NC]}"
     echo ""
     echo -e "${COLORS[YELLOW]}⚠️  WAŻNE: Aby zmiany w config.txt zadziałały, konieczny jest RESTART.${COLORS[NC]}"
-    
+
     log "Configuration applied successfully" "SUCCESS"
-    
+
     read -r -p "Czy chcesz teraz zrestartować system? (tak/nie): " reboot_now
     if [[ "$reboot_now" == "tak" ]]; then
         systemctl reboot
     fi
-    
+
     return 0
 }
 
 # Eksport funkcji
-export -f apply_daemon_conf apply_default_pa apply_mpd_conf apply_config_txt validate_mpd_config apply_configs
+export -f _atomic_replace _backup_single
+export -f apply_daemon_conf apply_default_pa apply_mpd_conf apply_config_txt
+export -f validate_mpd_config apply_configs
